@@ -20,14 +20,21 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     Cy_dz = 1.51;
     Cz_beta = 10.4;
     Cz_dy = 1.51;
+    mz_alpha = -6.07;
+    mz_dz = -0.425;
+    my_beta = -6.07;
+    my_dy = -0.425;
 
+    % 瞬时平衡假设
     alpha = (m*Vm*dtheta_dt_target + G * cos(theta)) / (P + 1/2 * rho *Vm^2 * Cy_alpha * S_ref);
     beta = (m*Vm*dphi_V_dt_target*cos(theta)) / (P + 1/2 * rho *Vm^2 * Cz_beta * S_ref);
+    delta_z = - mz_alpha / mz_dz * alpha;
+    delta_y = - my_beta / my_dy * beta;
 
     Cy = Cy_alpha * alpha + Cy_dz * delta_z;
     Cx = 0.437 + 7.01*alpha*delta_z + 17.3*alpha^2 + 2.41*delta_z^2;
     Cz = Cz_beta * beta + Cz_dy * delta_y;
-    
+
     Y = Cy * 1/2 * rho * Vm^2 * S_ref;
     X = Cx * 1/2 * rho * Vm^2 * S_ref;
     Z = Cz * 1/2 * rho * Vm^2 * S_ref;
