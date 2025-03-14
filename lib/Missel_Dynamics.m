@@ -15,7 +15,8 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     % 气动力
     rho = Air_Density(zm);
     S_ref = 0.0012566;
-
+    q = 1/2 * rho * Vm ^ 2;
+    % 轴对称导弹
     Cy_alpha = 10.4;
     Cy_dz = 1.51;
     Cz_beta = 10.4;
@@ -26,34 +27,46 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     my_dy = -0.425;
 
     % 瞬时平衡假设
-    alpha = (m*Vm*dtheta_dt_target + G * cos(theta)) / (P + 1/2 * rho *Vm^2 * Cy_alpha * S_ref);
-    beta = (m*Vm*dphi_V_dt_target*cos(theta)) / (P + 1/2 * rho *Vm^2 * Cz_beta * S_ref);
+    alpha = (m * Vm * dtheta_dt_target + G * cos(theta)) ...
+          / (P + Cy_alpha * q * S_ref);
+    beta = (m * Vm * dphi_V_dt_target * cos(theta)) ...
+          / (P + Cz_beta * q * S_ref);
+    % 攻角, 侧滑角大小限制
+    limit = deg2rad(10);
+    alpha = max(- limit, min(limit, alpha));
+    beta = max(- limit, min(limit, beta));
+
     delta_z = - mz_alpha / mz_dz * alpha;
     delta_y = - my_beta / my_dy * beta;
+
     fprintf('alpha: %.2f (rad)  beta: %.2f (rad)\n', alpha, beta);
 
     Cy = Cy_alpha * alpha + Cy_dz * delta_z;
-    Cx = 0.437 + 7.01*alpha*delta_z + 17.3*alpha^2 + 2.41*delta_z^2;
     Cz = Cz_beta * beta + Cz_dy * delta_y;
-
-    Y = Cy * 1/2 * rho * Vm^2 * S_ref;
-    X = Cx * 1/2 * rho * Vm^2 * S_ref;
-    Z = Cz * 1/2 * rho * Vm^2 * S_ref;
+    Cx = 0.437 + 7.01 * alpha * delta_z + 17.3 * alpha ^ 2 + 2.41 * delta_z ^ 2 ...
+               + 7.01 * beta * delta_y + 17.3 * beta ^ 2 + 2.41 * delta_y ^ 2;
+    
+    Y = Cy * q * S_ref;
+    X = Cx * q * S_ref;
+    Z = Cz * q * S_ref;
 
     % 导弹动力学方程组
-    dV_dt = (P*cos(alpha)*cos(beta) - X - G*sin(theta)) / m;
-    dtheta_dt = (P*sin(alpha) + Y - G*cos(theta)) / (m*Vm);
-    dphi_V_dt = (P*cos(alpha)*sin(beta) - Z) / (m * Vm * cos(theta));
+    dV_dt = (P * cos(alpha) * cos(beta) - X - G * sin(theta)) ...
+          / m;
+    dtheta_dt = (P * sin(alpha) + Y - G * cos(theta)) ...
+              / (m * Vm);
+    dphi_V_dt = (P * cos(alpha) * sin(beta) - Z) ...
+              / (m * Vm * cos(theta));
     dxm_dt = Vm * cos(theta) * cos(phi_V);
     dym_dt = Vm * sin(theta);
     dzm_dt = - Vm * cos(theta) * sin(phi_V);
     dm_dt = -1 * m_rate;
 
     dydt = [dV_dt;
-            dtheta_dt;
-            dphi_V_dt;
-            dxm_dt;
-            dym_dt;
-            dzm_dt;
-            dm_dt];
+        dtheta_dt;
+        dphi_V_dt;
+        dxm_dt;
+        dym_dt;
+        dzm_dt;
+        dm_dt];
 end

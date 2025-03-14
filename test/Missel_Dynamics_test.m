@@ -1,8 +1,8 @@
 close all; clear; clc;
 % 测试 Missel_Dynamics 函数并求解微分方程
-theta0 = deg2rad(0);
+Vm0 = 1;
+theta0 = deg2rad(10);
 phi_V0 = deg2rad(0);
-Vm0 = 0.0001;
 xm0 = 0;
 ym0 = 0;
 zm0 = 0;
@@ -11,13 +11,13 @@ m0 = 1; % kg
 y0 = [Vm0, theta0, phi_V0, xm0, ym0, zm0, m0];
 
 % 目标角速度
-dtheta_dt_target = 0; % 弹道倾角变化率 (rad/s)
+dtheta_dt_target = 0.1; % 弹道倾角变化率 (rad/s)
 dphi_V_dt_target = 0; % 弹道偏角变化率 (rad/s)
 
 % 定义微分方程
 dynamics = @(t, y) Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target);
 
-[t, y] = ode_EPC(0, 0.01, 10, y0, dynamics);
+[t, y] = ode_EPC(0, 0.01, 5, y0, dynamics);
 
 % 提取结果
 Vm = y(1, :);
@@ -54,11 +54,10 @@ xlabel('时间 (秒)');
 ylabel('质量(kg)');
 title('质量随时间变化');
 
-
 figure;
-plot3(xm, ym, zm);
+plot3(xm, zm, ym);
 xlabel('xm (m)');
-ylabel('ym (m)');
-zlabel('zm (m)');
+ylabel('zm (m)');
+zlabel('ym (m)');
 title('导弹轨迹');
 grid on;
