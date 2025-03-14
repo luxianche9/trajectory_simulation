@@ -1,7 +1,7 @@
 % 测试 Thrust 函数并绘制推力曲线
 
 % 定义时间范围 (0 到 2 秒)
-t = linspace(0, 2, 1000);
+t = linspace(0, 4, 1000);
 
 % 计算每个时间点的推力
 thrust_values = arrayfun(@Thrust, t);
