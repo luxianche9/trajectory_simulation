@@ -30,6 +30,7 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     beta = (m*Vm*dphi_V_dt_target*cos(theta)) / (P + 1/2 * rho *Vm^2 * Cz_beta * S_ref);
     delta_z = - mz_alpha / mz_dz * alpha;
     delta_y = - my_beta / my_dy * beta;
+    fprintf('alpha: %.2f (rad)  beta: %.2f (rad)\n', alpha, beta);
 
     Cy = Cy_alpha * alpha + Cy_dz * delta_z;
     Cx = 0.437 + 7.01*alpha*delta_z + 17.3*alpha^2 + 2.41*delta_z^2;
