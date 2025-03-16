@@ -20,9 +20,7 @@ phiV_t0 = deg2rad(0);
 x_t0 = 200;
 y_t0 = 100;
 z_t0 = 0;
-% 自动驾驶仪状态
 
-% 导引头状态
 
 y0 = [V_m0, theta_m0, phiV_m0, x_m0, y_m0, z_m0, m0, ...
      V_t0, theta_t0, phiV_t0, x_t0, y_t0, z_t0];
@@ -86,7 +84,6 @@ function dydt = simulation(t, y, target_pattern, N)
     x_m = y(4);
     y_m = y(5);
     z_m = y(6);
-    m = y(7);
     % 目标
     y2 = y(8:13);
     V_t = y(8);
@@ -121,7 +118,7 @@ function dydt = simulation(t, y, target_pattern, N)
     a_v = L * a;
 
     dtheta_dt = (a_v(2) - 9.8*cos(theta_m)) / V_m;
-    dphiV_dt = a_v(3) / (V_m * cos(theta_m));
+    dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
 
     dy1dt = Missel_Dynamics(t, y1, dtheta_dt, dphiV_dt);
     dy2dt = Target_Dynamics(t, y2, target_pattern);
