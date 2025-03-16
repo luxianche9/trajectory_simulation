@@ -18,7 +18,7 @@ V_t0 = 50;
 theta_t0 = deg2rad(0);
 phiV_t0 = deg2rad(0);
 x_t0 = 1000;
-y_t0 = 0;
+y_t0 = 300;
 z_t0 = 0;
 
 
@@ -28,7 +28,7 @@ y0 = [V_m0, theta_m0, phiV_m0, x_m0, y_m0, z_m0, m0, ...
 %% 仿真时间设置
 t0 = 0;
 dt = 0.01;
-tf = 5;
+tf = 10;
 
 %% 其他设置
 % 目标飞行方式: 目标运动模式 ('circle', 'straight', 'stationary')
@@ -40,7 +40,9 @@ N = 4;
 
 f = @(t,y) simulation(t, y, target_pattern, N);
 
-[t, y] = ode_EPC(t0, dt, tf, y0, f);
+event = @(t, y) hit(t, y);
+
+[t, y] = ode_EPC(t0, dt, tf, y0, f, event);
 
 % 导弹
 V_m = y(1, :);
