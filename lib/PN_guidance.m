@@ -1,4 +1,4 @@
-function [dtheta_dt, dphiV_dt] = PN_guidance(y, N)
+function a_v = PN_guidance(y, N)
     % 导弹
     V_m = y(1);
     theta_m = y(2);
@@ -43,8 +43,4 @@ function [dtheta_dt, dphiV_dt] = PN_guidance(y, N)
     % L = eul2rotm([0, phiV_m, theta_m], 'XYZ');
 
     a_v = L * a;
-
-    dtheta_dt = (a_v(2) - 9.8 * cos(theta_m)) / V_m;
-    % dtheta_dt = (a_v(2)) / V_m;
-    dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
 end

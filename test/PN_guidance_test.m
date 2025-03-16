@@ -90,7 +90,9 @@ function dydt = simulation(t, y, target_pattern, N)
     % 目标
     y2 = y(8:13);
 
-    [dtheta_dt, dphiV_dt] = PN_guidance(y, N);
+    a_v = PN_guidance(y, N);
+    dtheta_dt = (a_v(2) - 9.8 * cos(theta_m)) / V_m;
+    dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
 
     dxm_dt = V_m * cos(theta_m) * cos(phiV_m);
     dym_dt = V_m * sin(theta_m);

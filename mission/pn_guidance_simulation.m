@@ -64,19 +64,15 @@ z_t = y(13, :);
 
 figure;
 hold on;
-
 pos_m = [x_m; y_m; z_m];
 pos_t = [x_t; y_t; z_t];
 L = [1 0 0;
     0 0 -1;
     0 1 0];
-
 pos_m = L * pos_m;
 pos_t = L * pos_t;
 plot3(pos_m(1, :), pos_m(2,:), pos_m(3,:), 'b-', "DisplayName", 'missel');
 plot3(pos_t(1,:), pos_t(2,:), pos_t(3,:), 'r--',"DisplayName", 'target');
-
-
 xlabel('xm (m)');
 ylabel('zm (m)');
 zlabel('ym (m)');
@@ -117,13 +113,30 @@ title('质量随时间变化');
 %% 仿真系统动态方程
 
 function dydt = simulation(t, y, target_pattern, N)
-    % 导弹
+    % 导弹状态
     y1 = y(1:7);
-    % 目标
+    V_m = y(1);
+    theta_m = y(2);
+    % 目标状态
     y2 = y(8:13);
 
+    % 导引头环节
+
     % 比例导引法
-    [dtheta_dt, dphiV_dt] = PN_guidance(y, N);
+    a_v = PN_guidance(y, N);
+
+    % 加速度饱和
+    a_max = 30 * 9.8;
+    for i = 1:3
+        a_v(i) = max(- a_max, min(a_max, a_v(i)));
+    end
+
+    % 自动驾驶仪
+
+    % 加速度转化到弹道加速度特性
+
+    dtheta_dt = (a_v(2) - 9.8 * cos(theta_m)) / V_m;
+    dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
 
     dy1dt = Missel_Dynamics(t, y1, dtheta_dt, dphiV_dt);
     dy2dt = Target_Dynamics(t, y2, target_pattern);
