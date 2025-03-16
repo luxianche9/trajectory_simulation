@@ -12,7 +12,7 @@ y0 = [Vm0, theta0, phi_V0, xm0, ym0, zm0, m0];
 
 % 目标角速度
 dtheta_dt_target = deg2rad(0); % 弹道倾角变化率 (rad/s)
-dphi_V_dt_target = 0; % 弹道偏角变化率 (rad/s)
+dphi_V_dt_target = deg2rad(5); % 弹道偏角变化率 (rad/s)
 
 % 定义微分方程
 dynamics = @(t, y) Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target);
@@ -23,9 +23,9 @@ dynamics = @(t, y) Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target);
 Vm = y(1, :);
 theta = y(2, :);
 phi_V = y(3, :);
-xm = y(4, :);
-ym = y(5, :);
-zm = y(6, :);
+x_m = y(4, :);
+y_m = y(5, :);
+z_m = y(6, :);
 m = y(7, :);
 
 % 绘制结果
@@ -55,9 +55,22 @@ ylabel('质量(kg)');
 title('质量随时间变化');
 
 figure;
-plot3(xm, zm, ym);
+hold on;
+
+pos_m = [x_m; y_m; z_m];
+L = [1 0 0;
+    0 0 -1;
+    0 1 0];
+
+pos_m = L * pos_m;
+plot3(pos_m(1, :), pos_m(2,:), pos_m(3,:), 'b-', "DisplayName", 'missel');
+
 xlabel('xm (m)');
 ylabel('zm (m)');
 zlabel('ym (m)');
-title('导弹轨迹');
+legend;
+view(3);
+axis equal;
 grid on;
+title('导弹轨迹')
+hold off;

@@ -20,7 +20,7 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     Cy_alpha = 10.4;
     Cz_beta = Cy_alpha;
     Y_alpha = Cy_alpha * q * S_ref;
-    Z_beta = Cz_beta * q * S_ref;
+    Z_beta = - Cz_beta * q * S_ref;
     % Cy_dz = 1.51;
     % Cz_dy = 1.51;
     % mz_alpha = -6.07;
@@ -32,14 +32,14 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     alpha = (m * Vm * dtheta_dt_target + G * cos(theta)) ...
           / (P + Y_alpha);
     beta = (m * Vm * dphi_V_dt_target * cos(theta)) ...
-          / (P + Z_beta);
+          / (P - Z_beta);
     % 攻角, 侧滑角大小限制
     limit = deg2rad(20);
     alpha = max(- limit, min(limit, alpha));
     beta = max(- limit, min(limit, beta));
     fprintf('dtheta: %.2f alpha: %.2f (deg)\n', dtheta_dt_target, rad2deg(alpha));
-
-	Y = Y_alpha * alpha;
+    fprintf('dphiV: %.2f beta: %.2f (deg)\n', dphi_V_dt_target, rad2deg(beta));
+    Y = Y_alpha * alpha;
 	Z = Z_beta * beta;
 	X = (0.437 + 17.3 * alpha ^ 2) * q * S_ref;
 
@@ -58,8 +58,8 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
           / m;
     dtheta_dt = (P * sin(alpha) + Y - G * cos(theta)) ...
               / (m * Vm);
-    dphi_V_dt = (P * cos(alpha) * sin(beta) - Z) ...
-              / (m * Vm * cos(theta));
+    dphi_V_dt = (- P * cos(alpha) * sin(beta) + Z) ...
+              / (- m * Vm * cos(theta));
     dxm_dt = Vm * cos(theta) * cos(phi_V);
     dym_dt = Vm * sin(theta);
     dzm_dt = - Vm * cos(theta) * sin(phi_V);

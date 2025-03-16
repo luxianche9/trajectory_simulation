@@ -6,8 +6,8 @@ close all;
 % y = [V_m, theta_m, phiV_m, x_m, y_m, z_m, m, 
 %      V_t, theta_t, phiV_t, x_t, y_t, z_t]
 % 导弹状态
-V_m0 = 50;
-theta_m0 = deg2rad(0);
+V_m0 = 10;
+theta_m0 = deg2rad(20);
 phiV_m0 = deg2rad(0);
 x_m0 = 0;
 y_m0 = 0;
@@ -32,9 +32,9 @@ tf = 10;
 
 %% 其他设置
 % 目标飞行方式: 目标运动模式 ('circle', 'straight', 'stationary')
-target_pattern = 'straight';
+target_pattern = 'circle';
 % 比例导引系数
-N = 4;
+N = 5;
 
 %% 数值求解动态方程
 
@@ -64,13 +64,25 @@ z_t = y(13, :);
 
 figure;
 hold on;
-plot3(x_m, z_m, y_m, 'b-', "DisplayName", 'missel');
-plot3(x_t, z_t, y_t, 'r--',"DisplayName", 'target');
+
+pos_m = [x_m; y_m; z_m];
+pos_t = [x_t; y_t; z_t];
+L = [1 0 0;
+    0 0 -1;
+    0 1 0];
+
+pos_m = L * pos_m;
+pos_t = L * pos_t;
+plot3(pos_m(1, :), pos_m(2,:), pos_m(3,:), 'b-', "DisplayName", 'missel');
+plot3(pos_t(1,:), pos_t(2,:), pos_t(3,:), 'r--',"DisplayName", 'target');
+
+
 xlabel('xm (m)');
 ylabel('zm (m)');
 zlabel('ym (m)');
 legend;
 view(3);
+axis equal;
 grid on;
 title('导弹与目标轨迹')
 hold off;
