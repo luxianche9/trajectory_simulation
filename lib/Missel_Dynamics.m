@@ -37,8 +37,8 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     limit = deg2rad(20);
     alpha = max(- limit, min(limit, alpha));
     beta = max(- limit, min(limit, beta));
-    fprintf('dtheta: %.2f alpha: %.2f (deg)\n', dtheta_dt_target, rad2deg(alpha));
-    fprintf('dphiV: %.2f beta: %.2f (deg)\n', dphi_V_dt_target, rad2deg(beta));
+    % fprintf('dtheta: %.2f alpha: %.2f (deg)\n', dtheta_dt_target, rad2deg(alpha));
+    % fprintf('dphiV: %.2f beta: %.2f (deg)\n', dphi_V_dt_target, rad2deg(beta));
     Y = Y_alpha * alpha;
 	Z = Z_beta * beta;
 	X = (0.437 + 17.3 * alpha ^ 2) * q * S_ref;

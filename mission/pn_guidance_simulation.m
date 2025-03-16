@@ -2,6 +2,12 @@ clear;
 clc;
 close all;
 
+%% 仿真时间设置
+t0 = 0;
+global dt;
+dt = 0.01;
+tf = 10;
+
 %% 初值设置
 % y = [V_m, theta_m, phiV_m, x_m, y_m, z_m, m, 
 %      V_t, theta_t, phiV_t, x_t, y_t, z_t]
@@ -24,14 +30,19 @@ z_t0 = 0;
 target_pattern = 'circle';
 % 比例导引系数
 N = 5;
+% 一阶环节自动驾驶仪输出
+a_control0 = 0;
 
 y0 = [V_m0, theta_m0, phiV_m0, x_m0, y_m0, z_m0, m0, ...
-     V_t0, theta_t0, phiV_t0, x_t0, y_t0, z_t0];
+     V_t0, theta_t0, phiV_t0, x_t0, y_t0, z_t0, ...
+     a_control0];
 
-%% 仿真时间设置
-t0 = 0;
-dt = 0.01;
-tf = 10;
+% 非动态量存储
+% 索引: i = floor(t / dt) + 1;
+list_length = length(t0:dt:tf) - 1;
+% 指令加速度
+global a_mag_list;
+a_mag_list = zeros(1, list_length);
 
 %% 数值求解动态方程
 
@@ -57,6 +68,8 @@ phiV_t = y(10, :);
 x_t = y(11, :);
 y_t = y(12, :);
 z_t = y(13, :);
+% 自动驾驶仪
+a_control = y(14, :);
 
 %% 结果可视化
 
@@ -83,30 +96,39 @@ hold off;
 
 % 绘制结果
 figure;
-subplot(2, 2, 1);
+subplot(3, 3, 1);
 plot(t, V_m);
 xlabel('时间 (秒)');
 ylabel('速度 (m/s)');
 title('速度随时间变化');
 
-subplot(2, 2, 2);
+subplot(3, 3, 2);
 plot(t, theta_m);
 xlabel('时间 (秒)');
 ylabel('弹道倾角 (rad)');
 title('弹道倾角随时间变化');
 
-subplot(2, 2, 3);
+subplot(3, 3, 3);
 plot(t, phiV_m);
 xlabel('时间 (秒)');
 ylabel('弹道偏角 (rad)');
 title('弹道偏角随时间变化');
 
-subplot(2, 2, 4);
+subplot(3, 3, 4);
 plot(t, m);
 xlabel('时间 (秒)');
 ylabel('质量(kg)');
 title('质量随时间变化');
 
+subplot(3, 3, [7 8 9]);
+hold on;
+plot(t, a_mag_list(1:1000), 'r--', "DisplayName", 'input');
+plot(t, a_control, 'b-', 'DisplayName', 'output');
+xlabel('时间 (秒)');
+ylabel('加速度大小(m/s^2)');
+title('自动驾驶仪输出对比输入');
+legend;
+hold off;
 
 %% 仿真系统动态方程
 
@@ -117,27 +139,37 @@ function dydt = simulation(t, y, target_pattern, N)
     theta_m = y(2);
     % 目标状态
     y2 = y(8:13);
+    % 自动驾驶仪输出
+    a_control = y(14);
+    % 中间数据存储
+    global dt;
+    i = floor(t / dt) + 1;
+    global a_mag_list;
+    fprintf('t: %.2f i: %d a_c: %.2f \n', t, i, a_control);
 
     % 导引头环节
 
     % 比例导引法
     a_v = PN_guidance(y, N);
+    a_mag = norm(a_v);
+    a_dir = a_v/a_mag;
 
     % 加速度饱和
     a_max = 30 * 9.8;
-    for i = 1:3
-        a_v(i) = max(- a_max, min(a_max, a_v(i)));
-    end
+    a_mag = max(- a_max, min(a_max, a_mag));
+    a_mag_list(i) = a_mag;
 
     % 自动驾驶仪
+    T = 0.1;
+    da_control = First_Order_Process(t, a_control, a_mag, T);
 
     % 加速度转化到弹道加速度特性
-
+    a_v = a_control * a_dir;
     dtheta_dt = (a_v(2) - 9.8 * cos(theta_m)) / V_m;
     dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
 
     dy1dt = Missel_Dynamics(t, y1, dtheta_dt, dphiV_dt);
     dy2dt = Target_Dynamics(t, y2, target_pattern);
 
-    dydt = [dy1dt; dy2dt];
+    dydt = [dy1dt; dy2dt; da_control];
 end

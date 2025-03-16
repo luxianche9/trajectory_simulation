@@ -10,7 +10,7 @@ function flag = hit(~ , y)
              y_t - y_m;
              z_t - z_m];
 
-    fprintf("r_rel = %.2f\n", norm(r_rel));
+    % fprintf("r_rel = %.2f\n", norm(r_rel));
     
     if (norm(r_rel) < 1)
         flag = 1;
