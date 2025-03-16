@@ -5,7 +5,7 @@ close all;
 %% 初值设置
 % 导弹状态
 V_m0 = 100;
-theta_m0 = deg2rad(10);
+theta_m0 = deg2rad(0);
 phiV_m0 = deg2rad(0);
 x_m0 = 0;
 y_m0 = 0;
@@ -14,9 +14,9 @@ m0 = 1;
 % 目标状态
 V_t0 = 50;
 theta_t0 = deg2rad(0);
-phiV_t0 = deg2rad(10);
-x_t0 = 200;
-y_t0 = 100;
+phiV_t0 = deg2rad(0);
+x_t0 = 1000;
+y_t0 = 0;
 z_t0 = 0;
 
 y0 = [V_m0, theta_m0, phiV_m0, x_m0, y_m0, z_m0, m0 ...
@@ -25,7 +25,7 @@ y0 = [V_m0, theta_m0, phiV_m0, x_m0, y_m0, z_m0, m0 ...
 %% 仿真时间设置
 t0 = 0;
 dt = 0.01;
-tf = 20;
+tf = 30;
 
 %% 其他设置
 % 目标飞行方式: 目标运动模式 ('circle', 'straight', 'stationary')
@@ -84,7 +84,7 @@ function dydt = simulation(t, y, target_pattern, N)
     dxm_dt = V_m * cos(theta_m) * cos(phiV_m);
     dym_dt = V_m * sin(theta_m);
     dzm_dt = - V_m * cos(theta_m) * sin(phiV_m);
-
+    
     dy1dt = [0;
             dtheta_dt;
             dphiV_dt;

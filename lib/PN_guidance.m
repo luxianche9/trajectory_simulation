@@ -45,5 +45,6 @@ function [dtheta_dt, dphiV_dt] = PN_guidance(y, N)
     a_v = L * a;
 
     dtheta_dt = (a_v(2) - 9.8 * cos(theta_m)) / V_m;
+    % dtheta_dt = (a_v(2)) / V_m;
     dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
 end

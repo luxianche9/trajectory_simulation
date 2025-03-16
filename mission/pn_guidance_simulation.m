@@ -6,19 +6,19 @@ close all;
 % y = [V_m, theta_m, phiV_m, x_m, y_m, z_m, m, 
 %      V_t, theta_t, phiV_t, x_t, y_t, z_t]
 % 导弹状态
-V_m0 = 1;
-theta_m0 = deg2rad(10);
+V_m0 = 50;
+theta_m0 = deg2rad(0);
 phiV_m0 = deg2rad(0);
 x_m0 = 0;
 y_m0 = 0;
 z_m0 = 0;
 m0 = 1; % kg
 % 目标状态
-V_t0 = 100;
+V_t0 = 50;
 theta_t0 = deg2rad(0);
 phiV_t0 = deg2rad(0);
-x_t0 = 200;
-y_t0 = 100;
+x_t0 = 1000;
+y_t0 = 0;
 z_t0 = 0;
 
 
@@ -34,7 +34,7 @@ tf = 5;
 % 目标飞行方式: 目标运动模式 ('circle', 'straight', 'stationary')
 target_pattern = 'straight';
 % 比例导引系数
-N = 5;
+N = 4;
 
 %% 数值求解动态方程
 
@@ -73,52 +73,43 @@ grid on;
 title('导弹与目标轨迹')
 hold off;
 
+% 绘制结果
+figure;
+subplot(2, 2, 1);
+plot(t, V_m);
+xlabel('时间 (秒)');
+ylabel('速度 (m/s)');
+title('速度随时间变化');
+
+subplot(2, 2, 2);
+plot(t, theta_m);
+xlabel('时间 (秒)');
+ylabel('弹道倾角 (rad)');
+title('弹道倾角随时间变化');
+
+subplot(2, 2, 3);
+plot(t, phiV_m);
+xlabel('时间 (秒)');
+ylabel('弹道偏角 (rad)');
+title('弹道偏角随时间变化');
+
+subplot(2, 2, 4);
+plot(t, m);
+xlabel('时间 (秒)');
+ylabel('质量(kg)');
+title('质量随时间变化');
+
+
 %% 仿真系统动态方程
 
 function dydt = simulation(t, y, target_pattern, N)
     % 导弹
     y1 = y(1:7);
-    V_m = y(1);
-    theta_m = y(2);
-    phiV_m = y(3);
-    x_m = y(4);
-    y_m = y(5);
-    z_m = y(6);
     % 目标
     y2 = y(8:13);
-    V_t = y(8);
-    theta_t = y(9);
-    phiV_t = y(10);
-    x_t = y(11);
-    y_t = y(12);
-    z_t = y(13);
 
-    % 计算相对距离矢量
-    r_rel = [x_t - x_m;
-             y_t - y_m;
-             z_t - z_m];
-    % 计算导弹和目标的速度矢量
-    V_m_vec = [V_m .* cos(theta_m) .* cos(phiV_m);
-               V_m .* cos(theta_m) .* sin(phiV_m);
-               V_m .* sin(theta_m)];
-    V_t_vec = [V_t .* cos(theta_t) .* cos(phiV_t);
-               V_t .* cos(theta_t) .* sin(phiV_t);
-               V_t .* sin(theta_t)];
-    % 计算相对速度矢量
-    V_rel = V_t_vec - V_m_vec;
     % 比例导引法
-
-    a = PN_guidance(r_rel, V_rel, N);
-
-    L = eul2rotm([0, phiV_m, theta_m], 'XYZ')';
-    % L = [cos(theta)*cos(phiV), sin(theta), -cos(theta)*sin(phiV);
-    % -sin(theta)*cos(phiV), cos(theta), sin(theta)*sin(phiV);
-    % sin(phiV), 0, cos(phiV)];
-    
-    a_v = L * a;
-
-    dtheta_dt = (a_v(2) - 9.8*cos(theta_m)) / V_m;
-    dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
+    [dtheta_dt, dphiV_dt] = PN_guidance(y, N);
 
     dy1dt = Missel_Dynamics(t, y1, dtheta_dt, dphiV_dt);
     dy2dt = Target_Dynamics(t, y2, target_pattern);

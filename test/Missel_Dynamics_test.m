@@ -11,7 +11,7 @@ m0 = 1; % kg
 y0 = [Vm0, theta0, phi_V0, xm0, ym0, zm0, m0];
 
 % 目标角速度
-dtheta_dt_target = 0.1; % 弹道倾角变化率 (rad/s)
+dtheta_dt_target = deg2rad(1); % 弹道倾角变化率 (rad/s)
 dphi_V_dt_target = 0; % 弹道偏角变化率 (rad/s)
 
 % 定义微分方程
