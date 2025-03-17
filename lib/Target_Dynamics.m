@@ -12,7 +12,6 @@ function dydt = Target_Dynamics(~, y, pattern)
     if strcmp(pattern, 'circle')
         % 目标绕圈飞行
         omega = deg2rad(10);  % 角速度 (rad/s)
-
         dydt(1) = 0;
         dydt(2) = 0;
         dydt(3) = omega;
@@ -26,6 +25,17 @@ function dydt = Target_Dynamics(~, y, pattern)
         dydt(1) = 0;
         dydt(2) = 0;
         dydt(3) = 0;
+        dydt(4) = V * cos(theta) * cos(phi_V);
+        dydt(5) = V * sin(theta);
+        dydt(6) = - V * cos(theta) * sin(phi_V);
+
+    elseif strcmp(pattern, 'random')
+        omega = deg2rad(240);
+        omega1 = 2 * (rand-0.5) * omega;
+        omega2 = 2 * (rand-0.5) * omega;
+        dydt(1) = 0;
+        dydt(2) = omega1;
+        dydt(3) = omega2;
         dydt(4) = V * cos(theta) * cos(phi_V);
         dydt(5) = V * sin(theta);
         dydt(6) = - V * cos(theta) * sin(phi_V);

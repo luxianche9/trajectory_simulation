@@ -26,8 +26,8 @@ phiV_t0 = deg2rad(0);
 x_t0 = 500;
 y_t0 = 300;
 z_t0 = 0;
-% 目标飞行方式: 目标运动模式 ('circle', 'straight', 'stationary')
-target_pattern = 'circle';
+% 目标飞行方式: 目标运动模式 ('circle', 'straight', 'stationary', 'random')
+target_pattern = 'random';
 % 比例导引系数
 N = 6;
 % 一阶环节自动驾驶仪输出
@@ -38,7 +38,7 @@ y0 = [V_m0, theta_m0, phiV_m0, x_m0, y_m0, z_m0, m0, ...
      a_control0];
 
 % 非动态量存储
-% 索引: i = floor(t / dt) + 1;
+% 索引: i = round(t / dt) + 1;
 list_length = length(t0:dt:tf) - 1;
 % 指令加速度
 global a_mag_list;
@@ -73,7 +73,35 @@ a_control = y(14, :);
 
 %% 结果可视化
 
+% 绘制结果
 figure;
+subplot(2, 2, 1);
+plot(t, V_m);
+xlabel('时间 (秒)');
+ylabel('速度 (m/s)');
+title('速度随时间变化');
+
+subplot(2, 2, 2);
+plot(t, m);
+xlabel('时间 (秒)');
+ylabel('质量(kg)');
+title('质量随时间变化');
+
+
+if length(a_mag_list) > length(t)
+    a_mag_list = a_mag_list(1:length(t));
+end
+subplot(2, 2, 3);
+hold on;
+plot(t, a_mag_list, 'r--', "DisplayName", 'input');
+plot(t, a_control, 'b-', 'DisplayName', 'output');
+xlabel('时间 (秒)');
+ylabel('加速度大小(m/s^2)');
+title('自动驾驶仪输出对比输入');
+legend;
+hold off;
+
+subplot(2,2,4)
 hold on;
 pos_m = [x_m; y_m; z_m];
 pos_t = [x_t; y_t; z_t];
@@ -82,8 +110,11 @@ L = [1 0 0;
     0 1 0];
 pos_m = L * pos_m;
 pos_t = L * pos_t;
-plot3(pos_m(1, :), pos_m(2,:), pos_m(3,:), 'b-', "DisplayName", 'missel');
-plot3(pos_t(1,:), pos_t(2,:), pos_t(3,:), 'r--',"DisplayName", 'target');
+plot3(pos_m(1, :), pos_m(2,:), pos_m(3,:), 'b-', "DisplayName", '导弹');
+plot3(pos_t(1,:), pos_t(2,:), pos_t(3,:), 'r--',"DisplayName", '目标');
+plot3(pos_m(1,1), pos_m(2,1), pos_m(3,1), 'bo', 'DisplayName', "导弹发射点");
+plot3(pos_t(1,1), pos_t(2,1), pos_t(3,1), 'ro', 'DisplayName', "目标起始点");
+plot3(pos_m(1,end), pos_m(2,end), pos_m(3, end), 'mx', 'DisplayName', "拦截点")
 xlabel('xm (m)');
 ylabel('zm (m)');
 zlabel('ym (m)');
@@ -94,45 +125,6 @@ grid on;
 title('导弹与目标轨迹')
 hold off;
 
-% 绘制结果
-figure;
-subplot(3, 3, 1);
-plot(t, V_m);
-xlabel('时间 (秒)');
-ylabel('速度 (m/s)');
-title('速度随时间变化');
-
-subplot(3, 3, 2);
-plot(t, theta_m);
-xlabel('时间 (秒)');
-ylabel('弹道倾角 (rad)');
-title('弹道倾角随时间变化');
-
-subplot(3, 3, 3);
-plot(t, phiV_m);
-xlabel('时间 (秒)');
-ylabel('弹道偏角 (rad)');
-title('弹道偏角随时间变化');
-
-subplot(3, 3, 4);
-plot(t, m);
-xlabel('时间 (秒)');
-ylabel('质量(kg)');
-title('质量随时间变化');
-
-
-if length(a_mag_list) > length(t)
-    a_mag_list = a_mag_list(1:length(t));
-end
-subplot(3, 3, [7 8 9]);
-hold on;
-plot(t, a_mag_list, 'r--', "DisplayName", 'input');
-plot(t, a_control, 'b-', 'DisplayName', 'output');
-xlabel('时间 (秒)');
-ylabel('加速度大小(m/s^2)');
-title('自动驾驶仪输出对比输入');
-legend;
-hold off;
 
 %% 仿真系统动态方程
 
@@ -147,7 +139,7 @@ function dydt = simulation(t, y, target_pattern, N)
     a_control = y(14);
     % 中间数据存储
     global dt;
-    i = floor(t / dt) + 1;
+    i = round(t / dt) + 1;
     global a_mag_list;
     % fprintf('t: %.2f i: %d a_c: %.2f \n', t, i, a_control);
 
