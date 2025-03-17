@@ -6,7 +6,7 @@ close all;
 t0 = 0;
 global dt;
 dt = 0.01;
-tf = 10;
+tf = 20;
 
 %% 初值设置
 % y = [V_m, theta_m, phiV_m, x_m, y_m, z_m, m, 
@@ -20,16 +20,16 @@ y_m0 = 0;
 z_m0 = 0;
 m0 = 1; % kg
 % 目标状态
-V_t0 = 50;
+V_t0 = 100;
 theta_t0 = deg2rad(0);
 phiV_t0 = deg2rad(0);
-x_t0 = 1000;
+x_t0 = 500;
 y_t0 = 300;
 z_t0 = 0;
 % 目标飞行方式: 目标运动模式 ('circle', 'straight', 'stationary')
 target_pattern = 'circle';
 % 比例导引系数
-N = 5;
+N = 6;
 % 一阶环节自动驾驶仪输出
 a_control0 = 0;
 
@@ -120,9 +120,13 @@ xlabel('时间 (秒)');
 ylabel('质量(kg)');
 title('质量随时间变化');
 
+
+if length(a_mag_list) > length(t)
+    a_mag_list = a_mag_list(1:length(t));
+end
 subplot(3, 3, [7 8 9]);
 hold on;
-plot(t, a_mag_list(1:1000), 'r--', "DisplayName", 'input');
+plot(t, a_mag_list, 'r--', "DisplayName", 'input');
 plot(t, a_control, 'b-', 'DisplayName', 'output');
 xlabel('时间 (秒)');
 ylabel('加速度大小(m/s^2)');
@@ -145,7 +149,7 @@ function dydt = simulation(t, y, target_pattern, N)
     global dt;
     i = floor(t / dt) + 1;
     global a_mag_list;
-    fprintf('t: %.2f i: %d a_c: %.2f \n', t, i, a_control);
+    % fprintf('t: %.2f i: %d a_c: %.2f \n', t, i, a_control);
 
     % 导引头环节
 

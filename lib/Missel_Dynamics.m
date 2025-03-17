@@ -17,16 +17,23 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     rho = Air_Density(zm);
     S_ref = 0.0012566;
     q = 1/2 * rho * Vm ^ 2;
+
+    % 气动力
     Cy_alpha = 10.4;
     Cz_beta = Cy_alpha;
-    Y_alpha = Cy_alpha * q * S_ref;
-    Z_beta = - Cz_beta * q * S_ref;
-    % Cy_dz = 1.51;
-    % Cz_dy = 1.51;
-    % mz_alpha = -6.07;
-    % mz_dz = -0.425;
-    % my_beta = -6.07;
-    % my_dy = -0.425;
+    Cy_dz = 1.51;
+    Cz_dy = Cy_dz;
+    % 气动转矩
+    mz_alpha = -6.07;
+    mz_dz = -0.425;
+    my_beta = mz_alpha;
+    my_dy = mz_alpha;
+    % 瞬时平衡假设
+    dz_alpha = - mz_alpha / mz_dz;
+    dy_beta = - my_beta / my_dy;
+    % 统一升力系数
+    Y_alpha = (Cy_alpha + Cy_dz * dz_alpha)* q * S_ref;
+    Z_beta = - (Cz_beta + Cz_dy * dy_beta) * q * S_ref;
 
     % 根据加速度反推攻角和侧滑角
     alpha = (m * Vm * dtheta_dt_target + G * cos(theta)) ...
@@ -40,18 +47,8 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
     % fprintf('dtheta: %.2f alpha: %.2f (deg)\n', dtheta_dt_target, rad2deg(alpha));
     % fprintf('dphiV: %.2f beta: %.2f (deg)\n', dphi_V_dt_target, rad2deg(beta));
     Y = Y_alpha * alpha;
-	Z = Z_beta * beta;
+    Z = Z_beta * beta;
 	X = (0.437 + 17.3 * alpha ^ 2) * q * S_ref;
-
-    % 瞬时平衡假设
-    % delta_z = - mz_alpha / mz_dz * alpha;
-    % delta_y = - my_beta / my_dy * beta;
-    % Cy = Cy_alpha * alpha + Cy_dz * delta_z;
-    % Cz = Cz_beta * beta + Cz_dy * delta_y;
-    % Cx = 0.437 + 7.01 * alpha * delta_z + 17.3 * alpha ^ 2 + 2.41 * delta_z ^ 2;
-    % Y = Cy * q * S_ref;
-    % X = Cx * q * S_ref;
-    % Z = Cz * q * S_ref;
 
     % 导弹动力学方程组
     dV_dt = (P * cos(alpha) * cos(beta) - X - G * sin(theta)) ...
