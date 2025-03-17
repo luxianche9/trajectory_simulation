@@ -133,10 +133,21 @@ function dydt = simulation(t, y, target_pattern, N)
     y1 = y(1:7);
     V_m = y(1);
     theta_m = y(2);
+    phiV_m = y(3);
+    x_m = y(4);
+    y_m = y(5);
+    z_m = y(6);
     % 目标状态
     y2 = y(8:13);
+    V_t = y(8);
+    theta_t = y(9);
+    phiV_t = y(10);
+    x_t = y(11);
+    y_t = y(12);
+    z_t = y(13);
     % 自动驾驶仪输出
     a_control = y(14);
+
     % 中间数据存储
     global dt;
     i = round(t / dt) + 1;
@@ -144,9 +155,27 @@ function dydt = simulation(t, y, target_pattern, N)
     % fprintf('t: %.2f i: %d a_c: %.2f \n', t, i, a_control);
 
     % 导引头环节
+    % 计算相对距离矢量
+    r_rel = [x_t - x_m;
+    y_t - y_m;
+    z_t - z_m];
+    % 计算导弹和目标的速度矢量
+    V_m_vec = [V_m .* cos(theta_m) .* cos(phiV_m);
+            V_m .* sin(theta_m);
+            - V_m .* cos(theta_m) .* sin(phiV_m)];
+    V_t_vec = [V_t .* cos(theta_t) .* cos(phiV_t);
+            V_t .* sin(theta_t);
+            - V_t .* cos(theta_m) .* sin(phiV_m)];
+    % 计算相对速度矢量
+    V_rel = V_t_vec - V_m_vec;
 
     % 比例导引法
-    a_v = PN_guidance(y, N);
+    a = PN_guidance(r_rel, V_rel, V_m_vec, N);
+    % L = eul2rotm([0, phiV_m, theta_m], 'XYZ');
+    L = [cos(theta_m)*cos(phiV_m), sin(theta_m), -cos(theta_m)*sin(phiV_m);
+        -sin(theta_m)*cos(phiV_m), cos(theta_m), sin(theta_m)*sin(phiV_m);
+        sin(phiV_m), 0, cos(phiV_m)];
+    a_v = L * a;
     a_mag = norm(a_v);
     a_dir = a_v/a_mag;
 
@@ -158,12 +187,12 @@ function dydt = simulation(t, y, target_pattern, N)
     % 自动驾驶仪
     T = 0.1;
     da_control = First_Order_Process(t, a_control, a_mag, T);
-
     % 加速度转化到弹道加速度特性
     a_v = a_control * a_dir;
     dtheta_dt = (a_v(2) - 9.8 * cos(theta_m)) / V_m;
     dphiV_dt = - a_v(3) / (V_m * cos(theta_m));
 
+    % 导弹动力学方程, 目标动力学方程
     dy1dt = Missel_Dynamics(t, y1, dtheta_dt, dphiV_dt);
     dy2dt = Target_Dynamics(t, y2, target_pattern);
 
