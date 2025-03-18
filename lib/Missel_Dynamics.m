@@ -20,8 +20,8 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
 
     % 气动力
     Cy_alpha = 10.4;
-    Cz_beta = Cy_alpha;
     Cy_dz = 1.51;
+    Cz_beta = Cy_alpha;
     Cz_dy = Cy_dz;
     % 气动转矩
     mz_alpha = -6.07;
@@ -37,9 +37,9 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
 
     % 根据加速度反推攻角和侧滑角
     alpha = (m * Vm * dtheta_dt_target + G * cos(theta)) ...
-          / (P + Y_alpha);
+        / (P + Y_alpha);
     beta = (m * Vm * dphi_V_dt_target * cos(theta)) ...
-          / (P - Z_beta);
+        / (P - Z_beta);
     % 攻角, 侧滑角大小限制
     limit = deg2rad(20);
     alpha = max(- limit, min(limit, alpha));
@@ -52,11 +52,11 @@ function dydt = Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target)
 
     % 导弹动力学方程组
     dV_dt = (P * cos(alpha) * cos(beta) - X - G * sin(theta)) ...
-          / m;
+            / m;
     dtheta_dt = (P * sin(alpha) + Y - G * cos(theta)) ...
-              / (m * Vm);
+                / (m * Vm);
     dphi_V_dt = (- P * cos(alpha) * sin(beta) + Z) ...
-              / (- m * Vm * cos(theta));
+                / (- m * Vm * cos(theta));
     dxm_dt = Vm * cos(theta) * cos(phi_V);
     dym_dt = Vm * sin(theta);
     dzm_dt = - Vm * cos(theta) * sin(phi_V);

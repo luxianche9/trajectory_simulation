@@ -12,7 +12,7 @@ tf = 20;
 % 比例导引系数
 N = 6;
 % 目标飞行方式:  ('circle', 'straight', 'stationary', 'random')
-target_pattern = 'circle';
+target_pattern = 'random';
 
 %% 初始状态设置
 % 导弹状态
@@ -94,19 +94,14 @@ end
 
 %% 结果可视化
 figure;
-subplot(3, 3, 1);
+subplot(2, 2, 1);
 plot(t, V_m);
 xlabel('时间 (秒)');
 ylabel('速度 (m/s)');
 title('速度随时间变化');
 
-subplot(3, 3, 2);
-plot(t, m);
-xlabel('时间 (秒)');
-ylabel('质量(kg)');
-title('质量随时间变化');
-
-subplot(3, 3, 3);
+figure;
+% subplot(2, 2, 2);
 hold on;
 plot(t, a_mag_list, 'r--', "DisplayName", '|a|');
 plot(t, a_control, 'b-', 'DisplayName', '|a指令|');
@@ -116,7 +111,8 @@ title('自动驾驶仪加速度跟踪');
 legend;
 hold off;
 
-subplot(3,3,4);
+figure;
+% subplot(2,2,3);
 hold on;
 plot(t, rad2deg(phi_s), 'b-', DisplayName='phi_s');
 plot(t, rad2deg(phi_s_c_list), 'r--', DisplayName='phi_s指令');
@@ -126,7 +122,8 @@ title('导引头视线偏角跟踪');
 legend;
 hold off;
 
-subplot(3,3,5);
+figure;
+% subplot(2,2,4);
 hold on;
 plot(t, rad2deg(theta_s), 'b-', DisplayName='theta_s');
 plot(t, rad2deg(theta_s_c_list), 'r--', DisplayName='theta_s指令');
@@ -136,7 +133,8 @@ title('导引头视线倾角跟踪');
 legend;
 hold off;
 
-subplot(3,3,[7 8 9])
+figure;
+% subplot(4,2,[3 4 7 8])
 hold on;
 pos_m = [x_m; y_m; z_m];
 pos_t = [x_t; y_t; z_t];
@@ -155,7 +153,7 @@ ylabel('zm (m)');
 zlabel('ym (m)');
 legend;
 view(3);
-axis equal;
+% axis equal;
 grid on;
 title('导弹与目标轨迹')
 hold off;

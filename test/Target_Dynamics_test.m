@@ -5,7 +5,7 @@ y0 = [10, deg2rad(0), deg2rad(0), 1000, 1000, 0];
 
 
 % 定义微分方程
-dynamics = @(t, y) Target_Dynamics(t, y, 'straight');
+dynamics = @(t, y) Target_Dynamics(t, y, 'random');
 
 [t, y] = ode_EPC(0, 0.01, 5, y0, dynamics);
 
@@ -42,5 +42,5 @@ plot3(xt, zt, yt);
 xlabel('x (m)');
 ylabel('z (m)');
 zlabel('y (m)');
-title('目标轨迹');
+title('目标随机运动轨迹');
 grid on;

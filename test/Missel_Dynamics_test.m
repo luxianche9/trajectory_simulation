@@ -11,8 +11,8 @@ m0 = 1; % kg
 y0 = [Vm0, theta0, phi_V0, xm0, ym0, zm0, m0];
 
 % 目标角速度
-dtheta_dt_target = deg2rad(0); % 弹道倾角变化率 (rad/s)
-dphi_V_dt_target = deg2rad(5); % 弹道偏角变化率 (rad/s)
+dtheta_dt_target = deg2rad(5); % 弹道倾角变化率 (rad/s)
+dphi_V_dt_target = deg2rad(0); % 弹道偏角变化率 (rad/s)
 
 % 定义微分方程
 dynamics = @(t, y) Missel_Dynamics(t, y, dtheta_dt_target, dphi_V_dt_target);
@@ -70,7 +70,6 @@ ylabel('zm (m)');
 zlabel('ym (m)');
 legend;
 view(3);
-axis equal;
 grid on;
-title('导弹轨迹')
+title('给定弹道倾角变化率的导弹轨迹')
 hold off;

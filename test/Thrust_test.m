@@ -9,7 +9,7 @@ thrust_values = arrayfun(@Thrust, t);
 % 绘制推力曲线
 figure;
 plot(t, thrust_values);
-xlabel('时间 (秒)');
-ylabel('推力');
-title('推力与时间的关系');
+xlabel('时间(s)');
+ylabel('推力(N)');
+title('发动机推力');
 grid on;
