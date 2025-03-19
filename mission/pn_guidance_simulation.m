@@ -10,7 +10,7 @@ tf = 20;
 
 %% 仿真参数设置
 % 比例导引系数
-N = 6;
+N = 5;
 % 目标飞行方式:  ('circle', 'straight', 'stationary', 'random')
 target_pattern = 'random';
 
@@ -27,7 +27,7 @@ m0 = 1; % kg
 V_t0 = 100;
 theta_t0 = deg2rad(0);
 phiV_t0 = deg2rad(0);
-x_t0 = 500;
+x_t0 = 1000;
 y_t0 = 300;
 z_t0 = 0;
 % 一阶环节自动驾驶仪输出
@@ -179,6 +179,7 @@ function dydt = simulation(t, y, target_pattern, N)
     z_t = y(13);
     % 自动驾驶仪输出
     a_control = y(14);
+    % 导引头环节
     phi_s = y(15);
     theta_s = y(16);
     % 非动态量存储
