@@ -1,6 +1,6 @@
 % 定义马赫数和攻角范围
-ma_interp = 0.1:0.1:0.9;
-alpha_interp = deg2rad(0:2:10);
+ma_interp = 0:0.1:3;
+alpha_interp = deg2rad(-30:1:30);
 
 % 创建网格
 [ma_grid, alpha_grid] = meshgrid(ma_interp, alpha_interp);
@@ -21,6 +21,8 @@ title('静稳定力矩系数的三维曲面图');
 colorbar;
 
 % 标记插值点
+ma_interp = 0.1:0.1:0.9;
+alpha_interp = deg2rad(0:2:10);
 y_interp = readmatrix('data/ATM/ATM_mza.xlsx');
 for i = 1:length(ma_interp)
     for j = 1:length(alpha_interp)

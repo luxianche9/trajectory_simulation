@@ -1,6 +1,6 @@
 clear;clc;close all;
 % 测试 Thrust 函数并绘制推力曲线
-t = linspace(0, 50, 1000);
+t = 0:0.1:50;
 
 % 计算每个时间点的推力
 mc_values = arrayfun(@ATM_mc, t);

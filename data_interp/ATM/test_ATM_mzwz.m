@@ -1,6 +1,6 @@
 % 定义马赫数和攻角范围
-ma_interp = 0.1:0.1:0.9;
-alpha_interp = deg2rad(0:2:10);
+ma_interp = 0:0.1:2;
+alpha_interp = deg2rad(-30:1:30);
 
 % 创建网格
 [ma_grid, alpha_grid] = meshgrid(ma_interp, alpha_interp);
@@ -20,6 +20,8 @@ zlabel('mz^omega_z');
 title('阻尼力矩系数的三维曲面图');
 colorbar;
 
+ma_interp = 0.1:0.1:0.9;
+alpha_interp = deg2rad(0:2:10);
 % 标记插值点
 y_interp = readmatrix('data/ATM/ATM_mzwz.xlsx');
 for i = 1:length(ma_interp)
