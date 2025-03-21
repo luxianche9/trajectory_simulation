@@ -1,18 +1,21 @@
 close all; clear; clc;
 % 测试 Missel_Dynamics_3dof 函数并求解微分方程
-Vm0 = 1;
-theta0 = deg2rad(0);
+Vm0 = 20;
+theta0 = deg2rad(18);
 wz0 = deg2rad(0);
 xm0 = 0;
-ym0 = 0;
-nu0 = 0;
-m0 = 1; % kg
+ym0 = 20;
+nu0 = deg2rad(18);
+m0 = 52.38; % kg
 y0 = [Vm0, theta0, wz0, xm0, ym0, nu0, m0];
 
 % 定义微分方程
+
+event = @(t, y) hit_ground(t, y);
+
 dynamics = @(t, y) Missel_Dynamics_3dof(t, y, 0);
 
-[t, y] = ode_EPC(0, 0.001, 0.423, y0, dynamics);
+[t, y] = ode_EPC(0, 0.01, 50, y0, dynamics, event);
 
 % 提取结果
 Vm = y(1, :);
@@ -38,9 +41,9 @@ ylabel('弹道倾角 (deg)');
 title('弹道倾角随时间变化');
 
 subplot(2, 4, 5);
-plot(t, deg2rad(nu));
+plot(t, rad2deg(nu));
 xlabel('时间 (秒)');
-ylabel('俯仰角 (deg/s)');
+ylabel('俯仰角 (deg)');
 title('俯仰角随时间变化');
 
 subplot(2, 4, 6);
