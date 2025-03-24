@@ -8,8 +8,8 @@ a = arrayfun(@Sound_Speed, h);
 
 % 绘制 a 与 h 的关系图
 figure;
-plot(h./1000, a);
+plot(h./1000, a, 'r-', LineWidth=2);
 xlabel('高度 (km)');
 ylabel('声速 (m/s)');
-title('声速与高度的关系');
+title('声速模型');
 grid on;

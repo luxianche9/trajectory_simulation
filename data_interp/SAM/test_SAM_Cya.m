@@ -1,25 +1,26 @@
+clear; clc; close all;
 % 定义马赫数和攻角范围
-Ma_range = linspace(1.5, 4.0, 50);
-alpha_range = linspace(1, 10, 50);
+Ma_interp = 1.5:0.1:4;
+alpha_interp = deg2rad(1:1:10);
 
 % 创建网格
-[Ma_grid, alpha_grid] = meshgrid(Ma_range, alpha_range);
+[Ma_grid, alpha_grid] = meshgrid(Ma_interp, alpha_interp);
 
 % 计算升力线斜率
 Cya_grid = arrayfun(@(Ma, alpha) SAM_Cya(Ma, alpha), Ma_grid, alpha_grid);
 
 % 绘制三维曲面
 figure;
-surf(Ma_grid, alpha_grid, Cya_grid);
+surf(Ma_grid, rad2deg(alpha_grid), Cya_grid);
 xlabel('Ma');
-ylabel('Alpha');
-zlabel('Cx');
-title('阻力因数Cx的三维曲面图');
+ylabel('Alpha(deg)');
+zlabel('C_y^α');
+title('升力线斜率C_y^α的三维曲面图');
 colorbar;
 
 % 标记插值点
 hold on;
-alpha_Cya = [1, 2, 4, 6, 8, 10];
+alpha_Cya = deg2rad([1, 2, 4, 6, 8, 10]);
 ma_Cya = [1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
 Cya_table = [
     0.0302, 0.0304, 0.0306, 0.0309, 0.0311, 0.0313;  % Ma=1.5
@@ -31,7 +32,7 @@ Cya_table = [
 
 for i = 1:length(ma_Cya)
     for j = 1:length(alpha_Cya)
-        plot3(ma_Cya(i), alpha_Cya(j), Cya_table(i, j), 'ro', 'MarkerFaceColor', 'r');
+        plot3(ma_Cya(i), rad2deg(alpha_Cya(j)), Cya_table(i, j), 'ro', 'MarkerFaceColor', 'r');
     end
 end
 hold off;

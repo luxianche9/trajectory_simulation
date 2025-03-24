@@ -53,6 +53,8 @@ ylabel('质量(kg)');
 title('质量随时间变化');
 
 subplot(2, 4, [3,4,7,8]);
+hold on;
+plot(xm0, ym0, 'bo', DisplayName='反坦克导弹发射点')
 plot(xm, ym, 'b-',DisplayName='反坦克导弹轨迹')
 xlabel('xm (m)');
 ylabel('ym (m)');

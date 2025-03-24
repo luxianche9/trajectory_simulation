@@ -1,6 +1,6 @@
 % 定义马赫数和攻角范围
-Ma_range = linspace(1.5, 4.0, 50);
-alpha_range = linspace(2, 10, 50);
+Ma_range = 1.5:0.1:4;
+alpha_range = deg2rad(2:1:10);
 
 % 创建网格
 [Ma_grid, alpha_grid] = meshgrid(Ma_range, alpha_range);
@@ -10,16 +10,16 @@ Cx_grid = arrayfun(@(Ma, alpha) SAM_Cx(Ma, alpha), Ma_grid, alpha_grid);
 
 % 绘制三维曲面
 figure;
-surf(Ma_grid, alpha_grid, Cx_grid);
+surf(Ma_grid, rad2deg(alpha_grid), Cx_grid);
 xlabel('Ma');
-ylabel('Alpha');
-zlabel('Cy_alpha');
-title('阻力因数Cy_alpha的三维曲面图');
+ylabel('Alpha(deg)');
+zlabel('C_x');
+title('阻力因数C_x的三维曲面图');
 colorbar;
 
 % 标记插值点
 hold on;
-alpha_Cx = [2, 4, 6, 8, 10];
+alpha_Cx = deg2rad([2, 4, 6, 8, 10]);
 ma_Cx = [1.5, 2.1, 2.7, 3.3, 4.0];
 Cx_table = [
     0.0430, 0.0511, 0.0651, 0.0847, 0.1120;  % Ma=1.5
@@ -30,7 +30,7 @@ Cx_table = [
 
 for i = 1:length(ma_Cx)
     for j = 1:length(alpha_Cx)
-        plot3(ma_Cx(i), alpha_Cx(j), Cx_table(i, j), 'ro', 'MarkerFaceColor', 'r');
+        plot3(ma_Cx(i), rad2deg(alpha_Cx(j)), Cx_table(i, j), 'ro', 'MarkerFaceColor', 'r');
     end
 end
 hold off;
