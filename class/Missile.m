@@ -4,11 +4,13 @@ classdef Missile
         S_ref % 特征面积(m^2)
         L_ref % 特征长度(m)
         L_wing % 翼展(m)
+        R_destroy % 摧毁半径(m)
+        
         % 仿真过程状态记录
-        states_list
-        t0
-        dt
-        tf
+        % states_list
+        % t0
+        % dt
+        % tf
     end
 
     methods
@@ -17,11 +19,12 @@ classdef Missile
             obj.S_ref = 0.0227;
             obj.L_ref = 1.8;
             obj.L_wing = 0.5;
-            obj.t0 = t0;
-            obj.dt = dt;
-            obj.tf = tf;
+            obj.R_destroy = 0.5; % 摧毁半径
+            % obj.t0 = t0;
+            % obj.dt = dt;
+            % obj.tf = tf;
         
-            obj.states_list = zeros(27, floor((tf - t0) / dt) + 1);
+            % obj.states_list = zeros(27, floor((tf - t0) / dt) + 1);
         end
 
         % function obj = Record_Data(obj, t, states, alpha, beta, gama_V, P, m_c, J_x, J_y, J_z, X, Y, Z, M_x, M_y, M_z)
@@ -208,16 +211,23 @@ classdef Missile
             M_y = (myb + mydy + mywy * omega_y * obj.L_wing / V) * q * obj.S_ref * obj.L_wing;
         end
 
-        function [value, isterminal, direction] = Hit_Ground(~, ~, states)
-            isterminal = 1; % 终止仿真
-            direction = 0;
-            y = states(5);
+        function hit = Hit_Ground(~, missile_pos)
+            y = missile_pos(2);
             if y < 0
-                value = 0; % 触发 
+                hit = 1; % 触发 
             else
-                value = 1;
+                hit = 0;
             end
         end
+
+        function hit = Hit_Target(obj, missile_pos, target_pos)
+            r_rel = missile_pos - target_pos;
+            if norm(r_rel) < obj.R_destroy
+                hit = true; % 导弹击中目标
+            else
+                hit = false; % 导弹未击中目标
+            end
+        end
+
     end
 end
-
