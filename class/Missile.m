@@ -1,40 +1,63 @@
-classdef Missel
+classdef Missile
     properties
         % 导弹参数
         S_ref % 特征面积(m^2)
         L_ref % 特征长度(m)
         L_wing % 翼展(m)
+        % 仿真过程状态记录
+        states_list
+        t0
+        dt
+        tf
     end
 
     methods
-        function obj = Missel(S_ref, L_ref, L_wing)
+        function obj = Missile(t0, dt, tf)
             % 导弹参数
-            obj.S_ref = S_ref;
-            obj.L_ref = L_ref;
-            obj.L_wing = L_wing;
+            obj.S_ref = 0.0227;
+            obj.L_ref = 1.8;
+            obj.L_wing = 0.5;
+            obj.t0 = t0;
+            obj.dt = dt;
+            obj.tf = tf;
+        
+            obj.states_list = zeros(27, floor((tf - t0) / dt) + 1);
         end
 
-        function dstates_dt = Missel_Dynamics(obj, states, t)
+        % function obj = Record_Data(obj, t, states, alpha, beta, gama_V, P, m_c, J_x, J_y, J_z, X, Y, Z, M_x, M_y, M_z)
+        %     i = floor(t / obj.dt) + 1;
+        %     % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
+        %     obj.states_list(1:13, i) = states;
+        %     obj.states_list(14:16, i) = [alpha, beta, gama_V];
+        %     obj.states_list(17:18, i) = [P, m_c];
+        %     obj.states_list(19:21, i) = [J_x, J_y, J_z];
+        %     obj.states_list(22:27, i) = [X, Y, Z, M_x, M_y, M_z];
+        % end
+
+        function [dstates_dt, obj] = Missile_Dynamics(obj, t, states, ...
+                                                      delta_y, delta_z)
             % 导弹6自由度动力学方程组
-            V = states.V;
-            theta = states.theta;
-            phi_V = states.phi_V;
-            omega_x = states.omega_x;
-            omega_y = states.omega_y;
-            omega_z = states.omega_z;
-            nu = states.nu;
-            gama = states.gama;
-            m = states.m;
+            % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
+            V = states(1);
+            theta = states(2);
+            phi_V = states(3);
+            omega_x = states(7);
+            omega_y = states(8);
+            omega_z = states(9);
+            nu = states(10);
+            gama = states(12);
+            m = states(13);
 
             g = 9.8;
 
-            [J_x, J_y, J_z] = obj.Missel_Inertia(obj, t);
+            [J_x, J_y, J_z] = obj.Missile_Inertia(t);
 
-            [alpha, beta, gama_V] = obj.Missel_Angle(obj, states);
+            [alpha, beta, gama_V] = obj.Missile_Angle(states);
 
-            [X, Y, Z, M_x, M_y, M_z] = obj.Missel_Aerodynamics(obj, states);
+            [X, Y, Z, M_x, M_y, M_z] = obj.Missile_Aerodynamics(t, states, ...
+                                                                delta_y, delta_z);
 
-            [P, m_c] = obj.Missel_Propotion(obj);
+            [P, m_c] = obj.Missile_Propotion(t);
             
             dV_dt = ( ...
                         P * cos(alpha) * cos(beta) ...
@@ -50,7 +73,7 @@ classdef Missel
                             - Z * sin(gama_V) ...
                             - m * g * cos(theta) ...
                         ) / m / V;
-            dphi_V_dt = ( ...
+            dphi_V_dt = - ( ...
                             P * ( ...
                                 sin(alpha) * sin(gama_V) ...
                                 - cos(alpha) * sin(beta) * cos(gama_V) ...
@@ -61,7 +84,7 @@ classdef Missel
             domega_x_dt = ( ...
                             M_x ...
                             - (J_z - J_y) * omega_z * omega_y ...
-                            ) / Jx;
+                            ) / J_x;
             domega_y_dt = ( ...
                             M_y ...
                             - (J_x - J_z) * omega_x * omega_z ...
@@ -92,47 +115,36 @@ classdef Missel
             
             dm_dt = - m_c;
 
+            % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
             dstates_dt = [dV_dt;
                           dtheta_dt;
                           dphi_V_dt;
-                          domega_x_dt;
-                          domega_y_dt;
-                          domega_z_dt;
                           dx_dt;
                           dy_dt;
                           dz_dt;
-                          dphi_dt;
+                          domega_x_dt;
+                          domega_y_dt;
+                          domega_z_dt;
                           dnu_dt;
+                          dphi_dt;
                           dgama_dt;
                           dm_dt];
-
-            % fprintf(['时间%.4f\n'...
-            % '速度%.2f 马赫数%.2f 动压%.2f\n'...
-            % '射程%.2f 高度%.2f 弹道倾角%.2f(deg) 俯仰角%.2f(deg)\n'...
-            % '俯仰力矩%.2f 转动角速度%.2f\n'...
-            % '质量%.2f 质心位置%.2f 质量流量%.2f\n'...
-            % '攻角%.2f(deg) 升力系数%.2f 升力%.2f 阻力系数Cx%.2f 阻力%.2f 推力%.2f\n\n'], ...
-            % t, ...
-            % Vm, ma, q, ...
-            % xm, ym, rad2deg(theta), rad2deg(nu), ...
-            % Mz, wz, ...
-            % m, xg, m_c, ...
-            % rad2deg(alpha), Cy, Y, Cx, X, P);
         end
 
-        function [alpha, beta, gama_V] = Missel_Angle(~, states)
-            theta = states.theta;
-            phi_V = states.phi_V;
-            nu = states.nu;
-            phi = states.phi;
-            gama = states.gama;
+        function [alpha, beta, gama_V] = Missile_Angle(~, states)
+            % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
+            theta = states(2);
+            phi_V = states(3);
+            nu = states(10);
+            phi = states(11);
+            gama = states(12);
 
             beta = asin( ...
                         cos(theta) * ( ...
                             cos(gama) * sin(phi - phi_V) ...
                             + sin(nu) * sin(gama) * cos(phi - phi_V) ...
                             ) ...
-                        - sin(theta) * sin(nu) * sin(gama) ...
+                        - sin(theta) * cos(nu) * sin(gama) ...
                         );
             alpha = asin( ...
                         ( ...
@@ -140,41 +152,45 @@ classdef Missel
                                 sin(nu) * cos(gama) * cos(phi - phi_V) ...
                                 - sin(gama) * sin(phi - phi_V) ...
                                 ) ...
-                            - sin(theta) * cos(nu) * cos(game) ...
+                            - sin(theta) * cos(nu) * cos(gama) ...
                         ) / cos(beta) ...
                         );
             gama_V = asin(...
                             ( ...
                                 cos(alpha) * sin(beta) * sin(nu) ...
-                                - sin(alpha) * sin(beta) * cos(nu) ...
+                                - sin(alpha) * sin(beta) * cos(gama) * cos(nu) ...
                                 + cos(beta) * sin(gama) * cos(nu) ...
                             ) / cos(theta) ...
                         );
         end
 
-        function [P, m_c] = Missel_Propotion(~, t)
+        function [P, m_c] = Missile_Propotion(~, t)
             P = ATM_thrust(t);
             m_c = ATM_mc(t);
         end
         
-        function [J_x, J_y, J_z] = Missel_Inertia(~, t)
+        function [J_x, J_y, J_z] = Missile_Inertia(~, t)
             J_x = 10; % 忽略滚转
-            J_y = ATM_Jy(t); 
-            J_z = J_y; % 轴对称导弹
+            J_z = ATM_Jz(t); 
+            J_y = J_z; % 轴对称导弹
         end
 
-        function [X, Y, Z, M_x, M_y, M_z] = Missel_Aerodynamics(obj, states)
-            V = states.V;
-            y = states.y;
+        function [X, Y, Z, M_x, M_y, M_z] = Missile_Aerodynamics(obj, t, states, ...
+                                                                delta_y, delta_z)
+            % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
+            V = states(1);
+            y = states(5);
+            omega_z = states(9);
+            omega_y = states(8);
             
-            [alpha, beta, ~] = obj.Missel_Angle(obj, states);
+            [alpha, beta, ~] = obj.Missile_Angle(states);
 
             xg = ATM_xg(t);
-            ma = V / Sound_Speed(y)
-            rho = Air_Density(ym);
+            ma = V / Sound_Speed(y);
+            rho = Air_Density(y);
             q = 1/2 * rho * V ^ 2;
 
-            Cx = ATM_Cx(ma, alpha + beta);
+            Cx = ATM_Cx(ma, alpha);
             Cy = ATM_Cy(ma, alpha);
             Cz = - ATM_Cy(ma, beta);
             Y = q * obj.S_ref * Cy;
@@ -188,8 +204,19 @@ classdef Missel
             mydy = ATM_mzdz(ma, delta_y);
             mywy = ATM_mzwz(ma, beta, xg);
             M_x = 0;
-            M_z = (mza + mzdz + mzwz * wz * obj.L_wing / V) * q * obj.S_ref * obj.L_wing;
-            M_y = (myb + mydy + mywy * wy * obj.L_wing / V) * q * obj.S_ref * obj.L_wing;
+            M_z = (mza + mzdz + mzwz * omega_z * obj.L_wing / V) * q * obj.S_ref * obj.L_wing;
+            M_y = (myb + mydy + mywy * omega_y * obj.L_wing / V) * q * obj.S_ref * obj.L_wing;
+        end
+
+        function [value, isterminal, direction] = Hit_Ground(~, ~, states)
+            isterminal = 1; % 终止仿真
+            direction = 0;
+            y = states(5);
+            if y < 0
+                value = 0; % 触发 
+            else
+                value = 1;
+            end
         end
     end
 end
