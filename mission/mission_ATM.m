@@ -145,7 +145,11 @@ function dy_dt = ode_wrap(t, y, missile, target)
     i = round((t - missile.t0) / missile.dt) + 1;
     n_y2 = missile.recode.n_y2(i);
 
-    % 简单控一下法向过载
+    % 制导: 比例导引法
+
+    % 控制: PID控制
+
+    
     delta_y = 0;
     delta_z = - 0.1 * (1 - n_y2); % 目标加速度
     max_delta = deg2rad(30);
