@@ -38,7 +38,6 @@ missile = Missile(t0, dt, tf);
 target = Target('straight');
 
 %% 数值求解动态方程
-
 t = t0:dt:tf;
 
 ode = @(t, y) ode_wrap(t, y, missile, target);
@@ -89,44 +88,58 @@ xlabel('xm (m)'); ylabel('zm (m)'); zlabel('ym (m)'); title('Missile&Target Traj
 grid on; view(3); legend('show'); axis equal;
 
 figure;
-subplot(3,3,1);
+subplot(4,3,1);
 plot(t, V_m, 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('Velocity (m/s)');title('Missile Velocity over Time');
-subplot(3,3,2);
+subplot(4,3,2);
 plot(t, rad2deg(theta), 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\theta (deg)');title('Theta Angle');
-subplot(3,3,3);
+subplot(4,3,3);
 plot(t, rad2deg(phi_V), 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\phi_V (deg)');title('Phi_V Angle');
 
-subplot(3,3,4);
+subplot(4,3,4);
 plot(t, omega_x, 'g', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\omega_x (rad/s)');title('Angular Velocity - \omega_x');
-subplot(3,3,5);
+subplot(4,3,5);
 plot(t, omega_y, 'g', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\omega_y (rad/s)');title('Angular Velocity - \omega_y');
-subplot(3,3,6);
+subplot(4,3,6);
 plot(t, omega_z, 'g', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\omega_z (rad/s)');title('Angular Velocity - \omega_z');
 
-subplot(3,3,7);
+subplot(4,3,7);
 plot(t, rad2deg(nu), 'b', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\nu (deg)');title('Nu Angle');
-subplot(3,3,8);
+subplot(4,3,8);
 plot(t, rad2deg(phi), 'b', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\phi (deg)');title('Phi Angle');
-subplot(3,3,9);
+subplot(4,3,9);
 plot(t, rad2deg(gama), 'b', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\gamma (deg)');title('Gama Angle');
 
+subplot(4,3,10);
+plot(t, missile.recode.n_x2, 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');ylabel('n_x2');title('n_x2 over Time');
+subplot(4,3,11);
+plot(t, missile.recode.n_y2, 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');ylabel('n_y2');title('n_y2 over Time');
+subplot(4,3,12);
+plot(t, missile.recode.n_z2, 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');ylabel('n_z2');title('n_z2 over Time');
 
+%% ode, event
 function dy_dt = ode_wrap(t, y, missile, target)
+    % ode45求解
+    i = round((t - missile.t0) / missile.dt) + 1;
+
     missile_states = y(1:13);
-    target_states = y(14:end);
+    target_states = y(14:end); 
 
-    
+    delta_x = missile.recode.delta_y(i);
+    delta_z = missile.recode.delta_z(i);
 
-    dy_dt_missile = missile.Missile_Dynamics(t, missile_states, 0, 0);
+    dy_dt_missile = missile.Missile_Dynamics(t, missile_states, delta_x, delta_z);
     dy_dt_target = target.Target_Dynamics(target_states);
     dy_dt = [dy_dt_missile; dy_dt_target];
 end

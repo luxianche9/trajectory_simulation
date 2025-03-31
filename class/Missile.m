@@ -1,16 +1,16 @@
-classdef Missile
+classdef Missile < handle % 继承Handle, 实现引用传递
     properties
         % 导弹参数
         S_ref % 特征面积(m^2)
         L_ref % 特征长度(m)
         L_wing % 翼展(m)
         R_destroy % 摧毁半径(m)
-        
-        % 仿真过程状态记录
-        % states_list
-        % t0
-        % dt
-        % tf
+
+        t0 % 起始时间(s)
+        dt % 时间步长(s)
+        tf % 结束时间(s)
+
+        recode % 记录数据
     end
 
     methods
@@ -19,25 +19,27 @@ classdef Missile
             obj.S_ref = 0.0227;
             obj.L_ref = 1.8;
             obj.L_wing = 0.5;
-            obj.R_destroy = 0.5; % 摧毁半径
-            % obj.t0 = t0;
-            % obj.dt = dt;
-            % obj.tf = tf;
-        
-            % obj.states_list = zeros(27, floor((tf - t0) / dt) + 1);
+            obj.R_destroy = 0.5;
+
+            obj.t0 = to;
+            obj.dt = dt;
+            obj.tf = tf;
+
+            length = round((tf - t0) / dt) + 1;
+
+            obj.recode.X = zeros(1, length);
+            obj.recode.Y = zeros(1, length);
+            obj.recode.Z = zeros(1, length);
+            obj.recode.alpha = zeros(1, length);
+            obj.recode.beta = zeros(1, length);
+            obj.recode.n_x2 = zeros(1, length);
+            obj.recode.n_y2 = zeros(1, length);
+            obj.recode.n_z2 = zeros(1, length);
+            obj.recode.delta_y = zeros(1, length);
+            obj.recode.delta_z = zeros(1, length);
         end
 
-        % function obj = Record_Data(obj, t, states, alpha, beta, gama_V, P, m_c, J_x, J_y, J_z, X, Y, Z, M_x, M_y, M_z)
-        %     i = floor(t / obj.dt) + 1;
-        %     % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
-        %     obj.states_list(1:13, i) = states;
-        %     obj.states_list(14:16, i) = [alpha, beta, gama_V];
-        %     obj.states_list(17:18, i) = [P, m_c];
-        %     obj.states_list(19:21, i) = [J_x, J_y, J_z];
-        %     obj.states_list(22:27, i) = [X, Y, Z, M_x, M_y, M_z];
-        % end
-
-        function [dstates_dt, obj] = Missile_Dynamics(obj, t, states, ...
+        function dstates_dt = Missile_Dynamics(obj, t, states, ...
                                                       delta_y, delta_z)
             % 导弹6自由度动力学方程组
             % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
@@ -51,17 +53,15 @@ classdef Missile
             gama = states(12);
             m = states(13);
 
+            i = round((t - obj.t0) / obj.dt) + 1;
+
             g = 9.8;
-
+            [P, m_c] = obj.Missile_Propotion(t);
             [J_x, J_y, J_z] = obj.Missile_Inertia(t);
-
             [alpha, beta, gama_V] = obj.Missile_Angle(states);
-
             [X, Y, Z, M_x, M_y, M_z] = obj.Missile_Aerodynamics(t, states, ...
                                                                 delta_y, delta_z);
 
-            [P, m_c] = obj.Missile_Propotion(t);
-            
             dV_dt = ( ...
                         P * cos(alpha) * cos(beta) ...
                         - X ...
@@ -98,13 +98,9 @@ classdef Missile
                             ) / J_z;
             
             dx_dt = V * cos(theta) * cos(phi_V);
-            
             dy_dt = V * sin(theta);
-            
             dz_dt = - V * cos(theta) * sin(phi_V);
-
             dnu_dt = omega_y * sin(gama) + omega_z * cos(gama);
-
             dphi_dt = (...
                         omega_y * cos(gama) ...
                         - omega_z * sin(gama) ...
@@ -118,6 +114,11 @@ classdef Missile
             
             dm_dt = - m_c;
 
+            obj.recode.X(i) = X;
+            obj.recode.Y(i) = Y;
+            obj.recode.Z(i) = Z;
+            obj.recode.alpha(i) = alpha;
+            obj.recode.beta(i) = beta;
             % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
             dstates_dt = [dV_dt;
                           dtheta_dt;
@@ -229,5 +230,33 @@ classdef Missile
             end
         end
 
+        function [n_x2, n_y2, n_z2] = Missile_Overload(obj, states, X, Y, Z)
+            [alpha, beta, gama_V] = obj.Missile_Angle(states);
+
+            g = 9.8; % 重力加速度(m/s^2)
+            % 过载(弹道坐标系)
+            n_x2 = ( ...
+                    P * cos(alpha) * cos(beta) ...
+                    - X) / m / g;
+            n_y2 = ( ...
+                    P * ( ...
+                        sin(alpha) * cos(gama_V) ...
+                        + cos(alpha) * sin(beta) * sin(gama_V) ...
+                        ) ...
+                    + Y * cos(gama_V) ...
+                    - Z * sin(gama_V)) / m / g;
+            n_z2 = ( ...
+                    P * ( ...
+                        sin(alpha) * sin(gama_V) ...
+                        - cos(alpha) * sin(beta) * cos(gama_V) ...
+                        ) ...
+                    + Y * sin(gama_V) ...
+                    + Z * cos(gama_V)) / m / g;
+            
+            i = round((t - obj.t0) / obj.dt) + 1;
+            obj.recode.n_x2(i) = n_x2;
+            obj.recode.n_y2(i) = n_y2;
+            obj.recode.n_z2(i) = n_z2;
+        end
     end
 end
