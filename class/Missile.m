@@ -21,26 +21,30 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             obj.L_wing = 0.5;
             obj.R_destroy = 0.5;
 
-            obj.t0 = to;
+            obj.t0 = t0;
             obj.dt = dt;
             obj.tf = tf;
 
             length = round((tf - t0) / dt) + 1;
+            length = length + 10; % 预留10个点, 提高鲁棒性
 
+            obj.recode.delta_y = zeros(1, length);
+            obj.recode.delta_z = zeros(1, length);
+            obj.recode.P = zeros(1, length);
+            obj.recode.m_c = zeros(1, length);
+            obj.recode.alpha = zeros(1, length);
+            obj.recode.beta = zeros(1, length);
+            obj.recode.gama_V = zeros(1, length);
             obj.recode.X = zeros(1, length);
             obj.recode.Y = zeros(1, length);
             obj.recode.Z = zeros(1, length);
-            obj.recode.alpha = zeros(1, length);
-            obj.recode.beta = zeros(1, length);
             obj.recode.n_x2 = zeros(1, length);
             obj.recode.n_y2 = zeros(1, length);
             obj.recode.n_z2 = zeros(1, length);
-            obj.recode.delta_y = zeros(1, length);
-            obj.recode.delta_z = zeros(1, length);
         end
 
         function dstates_dt = Missile_Dynamics(obj, t, states, ...
-                                                      delta_y, delta_z)
+                                                delta_y, delta_z)
             % 导弹6自由度动力学方程组
             % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
             V = states(1);
@@ -54,6 +58,7 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             m = states(13);
 
             i = round((t - obj.t0) / obj.dt) + 1;
+            disp(t);
 
             g = 9.8;
             [P, m_c] = obj.Missile_Propotion(t);
@@ -61,6 +66,24 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             [alpha, beta, gama_V] = obj.Missile_Angle(states);
             [X, Y, Z, M_x, M_y, M_z] = obj.Missile_Aerodynamics(t, states, ...
                                                                 delta_y, delta_z);
+            n_x2 = ( ...
+                P * cos(alpha) * cos(beta) ...
+                - X) / m / g;
+            n_y2 = ( ...
+                    P * ( ...
+                        sin(alpha) * cos(gama_V) ...
+                        + cos(alpha) * sin(beta) * sin(gama_V) ...
+                        ) ...
+                    + Y * cos(gama_V) ...
+                    - Z * sin(gama_V)) / m / g;
+            n_z2 = ( ...
+                    P * ( ...
+                        sin(alpha) * sin(gama_V) ...
+                        - cos(alpha) * sin(beta) * cos(gama_V) ...
+                        ) ...
+                    + Y * sin(gama_V) ...
+                    + Z * cos(gama_V)) / m / g;
+
 
             dV_dt = ( ...
                         P * cos(alpha) * cos(beta) ...
@@ -114,11 +137,21 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             
             dm_dt = - m_c;
 
-            obj.recode.X(i) = X;
-            obj.recode.Y(i) = Y;
-            obj.recode.Z(i) = Z;
-            obj.recode.alpha(i) = alpha;
-            obj.recode.beta(i) = beta;
+            % 记录数据
+            obj.recode.delta_y(i+1) = delta_y;
+            obj.recode.delta_z(i+1) = delta_z;
+            obj.recode.P(i+1) = P;
+            obj.recode.m_c(i+1) = m_c;
+            obj.recode.X(i+1) = X;
+            obj.recode.Y(i+1) = Y;
+            obj.recode.Z(i+1) = Z;
+            obj.recode.alpha(i+1) = alpha;
+            obj.recode.beta(i+1) = beta;
+            obj.recode.gama_V(i+1) = gama_V;
+            obj.recode.n_x2(i+1) = n_x2;
+            obj.recode.n_y2(i+1) = n_y2;
+            obj.recode.n_z2(i+1) = n_z2;
+
             % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
             dstates_dt = [dV_dt;
                           dtheta_dt;
@@ -228,35 +261,6 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             else
                 hit = false; % 导弹未击中目标
             end
-        end
-
-        function [n_x2, n_y2, n_z2] = Missile_Overload(obj, states, X, Y, Z)
-            [alpha, beta, gama_V] = obj.Missile_Angle(states);
-
-            g = 9.8; % 重力加速度(m/s^2)
-            % 过载(弹道坐标系)
-            n_x2 = ( ...
-                    P * cos(alpha) * cos(beta) ...
-                    - X) / m / g;
-            n_y2 = ( ...
-                    P * ( ...
-                        sin(alpha) * cos(gama_V) ...
-                        + cos(alpha) * sin(beta) * sin(gama_V) ...
-                        ) ...
-                    + Y * cos(gama_V) ...
-                    - Z * sin(gama_V)) / m / g;
-            n_z2 = ( ...
-                    P * ( ...
-                        sin(alpha) * sin(gama_V) ...
-                        - cos(alpha) * sin(beta) * cos(gama_V) ...
-                        ) ...
-                    + Y * sin(gama_V) ...
-                    + Z * cos(gama_V)) / m / g;
-            
-            i = round((t - obj.t0) / obj.dt) + 1;
-            obj.recode.n_x2(i) = n_x2;
-            obj.recode.n_y2(i) = n_y2;
-            obj.recode.n_z2(i) = n_z2;
         end
     end
 end

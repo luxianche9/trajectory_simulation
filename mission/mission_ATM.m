@@ -38,17 +38,17 @@ missile = Missile(t0, dt, tf);
 target = Target('straight');
 
 %% 数值求解动态方程
-t = t0:dt:tf;
-
 ode = @(t, y) ode_wrap(t, y, missile, target);
 
 event = @(t, y) event_wrap(t, y, missile);
 
-options = odeset('Events', event, 'RelTol', 1e-6, 'AbsTol', 1e-9);
+[t, y] = ode_EPC(t0, dt, tf, y0, ode, event);
 
-[t, y] = ode45(ode, t, y0, options);
+% 此处自编ode实现, 返回y为行向量......
+y = y';
 
 %% 数据提取
+length = length(t);
 % 导弹状态
 % V, theta, phi_V, x, y, z, omega_x, omega_y, omega_z, nu, phi, gama, m
 V_m = y(:, 1);
@@ -64,6 +64,9 @@ nu = y(:, 10);
 phi = y(:, 11);
 gama = y(:, 12);
 m = y(:, 13);
+n_x2 = missile.recode.n_x2(1:length);
+n_y2 = missile.recode.n_y2(1:length);
+n_z2 = missile.recode.n_z2(1:length);
 % 目标状态
 % V, theta, phi_V, x, y, z
 V_t = y(:, 14);
@@ -74,6 +77,7 @@ y_t = y(:, 18);
 z_t = y(:, 19);
 
 %% 数据可视化
+% 导弹和目标轨迹
 figure; hold on;
 pos_m = [x_m'; y_m'; z_m'];
 pos_t = [x_t'; y_t'; z_t'];
@@ -88,6 +92,7 @@ xlabel('xm (m)'); ylabel('zm (m)'); zlabel('ym (m)'); title('Missile&Target Traj
 grid on; view(3); legend('show'); axis equal;
 
 figure;
+% 导弹速度
 subplot(4,3,1);
 plot(t, V_m, 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('Velocity (m/s)');title('Missile Velocity over Time');
@@ -98,6 +103,7 @@ subplot(4,3,3);
 plot(t, rad2deg(phi_V), 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\phi_V (deg)');title('Phi_V Angle');
 
+% 导弹角速度
 subplot(4,3,4);
 plot(t, omega_x, 'g', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\omega_x (rad/s)');title('Angular Velocity - \omega_x');
@@ -108,6 +114,7 @@ subplot(4,3,6);
 plot(t, omega_z, 'g', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\omega_z (rad/s)');title('Angular Velocity - \omega_z');
 
+% 导弹姿态
 subplot(4,3,7);
 plot(t, rad2deg(nu), 'b', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\nu (deg)');title('Nu Angle');
@@ -118,44 +125,52 @@ subplot(4,3,9);
 plot(t, rad2deg(gama), 'b', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('\gamma (deg)');title('Gama Angle');
 
+% 导弹过载
 subplot(4,3,10);
-plot(t, missile.recode.n_x2, 'r', 'LineWidth', 1.5);
+plot(t, n_x2, 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('n_x2');title('n_x2 over Time');
 subplot(4,3,11);
-plot(t, missile.recode.n_y2, 'r', 'LineWidth', 1.5);
+plot(t, n_y2, 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('n_y2');title('n_y2 over Time');
 subplot(4,3,12);
-plot(t, missile.recode.n_z2, 'r', 'LineWidth', 1.5);
+plot(t, n_z2, 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('n_z2');title('n_z2 over Time');
 
 %% ode, event
 function dy_dt = ode_wrap(t, y, missile, target)
     % ode45求解
-    i = round((t - missile.t0) / missile.dt) + 1;
-
     missile_states = y(1:13);
-    target_states = y(14:end); 
+    target_states = y(14:19); 
 
-    delta_x = missile.recode.delta_y(i);
-    delta_z = missile.recode.delta_z(i);
+    i = round((t - missile.t0) / missile.dt) + 1;
+    n_y2 = missile.recode.n_y2(i);
 
-    dy_dt_missile = missile.Missile_Dynamics(t, missile_states, delta_x, delta_z);
+    % 简单控一下法向过载
+    delta_y = 0;
+    delta_z = - 0.1 * (1 - n_y2); % 目标加速度
+    max_delta = deg2rad(30);
+    delta_z = min(-max_delta, max(delta_z, -max_delta)); % 限制最大值
+
+    dy_dt_missile = missile.Missile_Dynamics(t, missile_states, delta_y, delta_z);
     dy_dt_target = target.Target_Dynamics(target_states);
     dy_dt = [dy_dt_missile; dy_dt_target];
 end
 
-function [value, isterminal, direction] = event_wrap(t, y, missile)
-    isterminal = 1; % 终止仿真
-    direction = 0;
-    value = 1;
+function value = event_wrap(t, y, missile)
+    % [value, isterminal, direction]
+    % isterminal = 1; % 终止仿真
+    % direction = 0;
+    value = 0;
 
     missile_pos = y(4:6); % 导弹位置
     target_pos = y(17:19); % 目标位置
 
     if missile.Hit_Ground(missile_pos) == 1
-        value = 0; % 触发终止
+        value = 1; % 触发终止
     end
     if missile.Hit_Target(missile_pos, target_pos) == 1
-        value = 0; % 触发终止
+        value = 1; % 触发终止
     end
+
+    % value = ~value;
 end
