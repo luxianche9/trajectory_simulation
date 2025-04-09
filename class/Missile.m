@@ -10,6 +10,8 @@ classdef Missile < handle % 继承Handle, 实现引用传递
         K_attitude
         K_n
 
+        t_plan
+
         N
 
         t0 % 起始时间(s)
@@ -28,8 +30,10 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             obj.R_destroy = 0.5;
 
             obj.K_omega = 1; % 角速度增益
-            obj.K_attitude = 0; % 姿态增益
+            obj.K_attitude = -1; % 姿态增益
             obj.K_n = -0.5; % 加速度增益
+
+            obj.t_plan = 12; % 方案飞行时间
 
             obj.N = 4;
 
@@ -53,6 +57,7 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             obj.recode.n_x2 = zeros(1, length);
             obj.recode.n_y2 = zeros(1, length);
             obj.recode.n_z2 = zeros(1, length);
+            obj.recode.nu_cmd = zeros(1, length);
             obj.recode.n_y2_cmd = zeros(1, length);
             obj.recode.n_z2_cmd = zeros(1, length);
         end
@@ -185,25 +190,33 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             dstates_dt = [diff_n_y2; diff_n_z2];
         end
 
-        function [delta_y, delta_z] = Missile_Control(obj, states, int_n_y2, int_n_z2)
+        function [delta_y, delta_z] = Missile_Control(obj, states, int_n_y2, int_n_z2, nu_cmd, flag)
             phi = states(11);
             omega_y = states(8);
             nu = states(10);
             omega_z = states(9);
 
-            delta_y = obj.K_attitude * phi ...
-                    + obj.K_omega * omega_y ...
-                    - obj.K_n * int_n_z2; % 目标角速度
-            delta_z = obj.K_attitude * nu ...
-                    + obj.K_omega * omega_z ...
-                    + obj.K_n * int_n_y2; % 目标角速度
+            disp(flag);
+
+            if flag == 1
+                % 比例导引
+                delta_y = obj.K_omega * omega_y ...
+                        - obj.K_n * int_n_z2; % 目标角速度
+                delta_z = obj.K_omega * omega_z ...
+                        + obj.K_n * int_n_y2; % 目标角速度
+            else
+                % 方案飞行
+                delta_y = 0;
+                delta_z = obj.K_omega * omega_z ...
+                        + obj.K_attitude * (nu_cmd - nu);
+            end
 
             max_delta = deg2rad(30);
             delta_z = max(-max_delta, min(delta_z, max_delta)); % 限制最大值
             delta_y = max(-max_delta, min(delta_y, max_delta)); % 限制最大值
         end
 
-        function [n_y2_cmd, n_z2_cmd] = Missile_Guidance(obj, t, missile_states, target_states)
+        function [n_y2_cmd, n_z2_cmd, nu_cmd, flag] = Missile_Guidance(obj, t, missile_states, target_states)
             r_rel = target_states(4:6) - missile_states(4:6);
             v_m = missile_states(1);
             theta_m = missile_states(2);
@@ -215,14 +228,22 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             V_t_vec = Euler2Vec(v_t, theta_t, phi_t);
             V_rel = V_t_vec - V_m_vec;
 
-            omega = cross(r_rel, V_rel) / norm(r_rel)^2;
-        
-            a = - obj.N * norm(V_rel) * cross(V_m_vec, omega) / norm(V_m_vec);
-            
-            n_y2_cmd = a(2) / 9.8 + 1;
-            n_z2_cmd = a(3) / 9.8;
-
             i = round((t - obj.t0) / obj.dt) + 1;
+
+            if t < obj.t_plan
+                flag = 0;
+                nu_cmd = (deg2rad(0) - deg2rad(18)) / obj.t_plan * t + deg2rad(18);
+                n_y2_cmd = NaN;
+                n_z2_cmd = NaN;
+            else
+                flag = 1;
+                nu_cmd = NaN;
+                omega = cross(r_rel, V_rel) / norm(r_rel)^2;
+                a = - obj.N * norm(V_rel) * cross(V_m_vec, omega) / norm(V_m_vec);
+                n_y2_cmd = a(2) / 9.8 + 1;
+                n_z2_cmd = a(3) / 9.8;
+            end
+            obj.recode.nu_cmd(i+1) = nu_cmd;
             obj.recode.n_y2_cmd(i+1) = n_y2_cmd;
             obj.recode.n_z2_cmd(i+1) = n_z2_cmd;
 
