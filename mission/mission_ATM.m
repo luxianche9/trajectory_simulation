@@ -3,7 +3,7 @@ clear; clc; close all;
 %% 仿真时间设置
 t0 = 0;
 dt = 0.01;
-tf = 20;
+tf = 100;
 
 %% 仿真参数设置
 % 导弹初始状态
@@ -26,7 +26,7 @@ m0 = 52.38;
 V_t0 = 25.5;
 theta_t0 = deg2rad(0);
 phi_t0 = atan(5/15);
-x_t0 = 12000;
+x_t0 = 4000;
 y_t0 = 0;
 z_t0 = 0;
 % 控制器(积分器)状态
@@ -83,6 +83,8 @@ int_n_y2 = y(:, 20);
 int_n_z2 = y(:, 21);
 delta_y = missile.recode.delta_y(1:length);
 delta_z = missile.recode.delta_z(1:length);
+n_y2_cmd = missile.recode.n_y2_cmd(1:length);
+n_z2_cmd = missile.recode.n_z2_cmd(1:length);
 
 %% 数据可视化
 % 导弹和目标轨迹
@@ -95,9 +97,9 @@ L = [1 0 0;
 pos_m = L * pos_m;
 pos_t = L * pos_t;
 plot3(pos_m(1, :), pos_m(2,:), pos_m(3,:), 'b-', "DisplayName", 'missel');
-% plot3(pos_t(1, :), pos_t(2,:), pos_t(3,:), 'r-', "DisplayName", 'target');
+plot3(pos_t(1, :), pos_t(2,:), pos_t(3,:), 'r-', "DisplayName", 'target');
 xlabel('xm (m)'); ylabel('zm (m)'); zlabel('ym (m)'); title('Missile&Target Trajectory');
-grid on; view(3); legend('show'); % axis equal;
+grid on; view(3); legend('show'); axis equal;
 
 figure;
 % 导弹速度
@@ -138,10 +140,16 @@ subplot(4,3,10);
 plot(t, n_x2, 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('n_x2');title('n_x2 over Time');
 subplot(4,3,11);
+hold on;
 plot(t, n_y2, 'r', 'LineWidth', 1.5);
+plot(t, n_y2_cmd, 'k--', 'LineWidth', 1.5, "DisplayName", 'n_y2_cmd');
+hold off;
 xlabel('Time (s)');ylabel('n_y2');title('n_y2 over Time');
 subplot(4,3,12);
+hold on;
 plot(t, n_z2, 'r', 'LineWidth', 1.5);
+plot(t, n_z2_cmd, 'k--', 'LineWidth', 1.5, "DisplayName", 'n_z2_cmd');
+hold off;
 xlabel('Time (s)');ylabel('n_z2');title('n_z2 over Time');
 
 figure;
@@ -170,8 +178,7 @@ function dy_dt = ode_wrap(t, y, missile, target)
     n_z2 = missile.recode.n_z2(i);
 
     % 制导
-    n_y2_cmd = 1;
-    n_z2_cmd = 0;
+    [n_y2_cmd, n_z2_cmd] = missile.Missile_Guidance(t, missile_states, target_states);
 
     diff_n_y2 = n_y2_cmd - n_y2;
     diff_n_z2 = n_z2_cmd - n_z2;
