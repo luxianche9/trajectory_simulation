@@ -6,6 +6,10 @@ classdef Missile < handle % 继承Handle, 实现引用传递
         L_wing % 翼展(m)
         R_destroy % 摧毁半径(m)
 
+        K_omega
+        K_attitude
+        K_n
+
         t0 % 起始时间(s)
         dt % 时间步长(s)
         tf % 结束时间(s)
@@ -20,6 +24,10 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             obj.L_ref = 1.8;
             obj.L_wing = 0.5;
             obj.R_destroy = 0.5;
+
+            obj.K_omega = 0; % 角速度增益
+            obj.K_attitude = 0; % 姿态增益
+            obj.K_n = - 0.5; % 加速度增益
 
             obj.t0 = t0;
             obj.dt = dt;
@@ -166,6 +174,29 @@ classdef Missile < handle % 继承Handle, 实现引用传递
                           dphi_dt;
                           dgama_dt;
                           dm_dt];
+        end
+
+        function dstates_dt = Missile_Controler_Dynamics(~, diff_n_y2, diff_n_z2)
+            dstates_dt = [diff_n_y2; diff_n_z2];
+        end
+
+        function [delta_y, delta_z] = Missile_Control(obj, states, int_n_y2, int_n_z2)
+            phi = states(11);
+            omega_y = states(8);
+            nu = states(10);
+            omega_z = states(9);
+
+
+            delta_y = obj.K_attitude * phi ...
+                    + obj.K_omega * omega_y ...
+                    + obj.K_n * int_n_z2; % 目标角速度
+            delta_z = obj.K_attitude * nu ...
+                    + obj.K_omega * omega_z ...
+                    + obj.K_n * int_n_y2; % 目标角速度
+
+            max_delta = deg2rad(30);
+            delta_z = max(-max_delta, min(delta_z, max_delta)); % 限制最大值
+            delta_y = max(-max_delta, min(delta_y, max_delta)); % 限制最大值
         end
 
         function [alpha, beta, gama_V] = Missile_Angle(~, states)
