@@ -26,12 +26,15 @@ m0 = 52.38;
 V_t0 = 25.5;
 theta_t0 = deg2rad(0);
 phi_t0 = atan(5/15);
-x_t0 = 12000;
+x_t0 = 4000;
 y_t0 = 0;
 z_t0 = 0;
+% 控制器(积分器)状态
+int_n_y2 = 0;
+int_n_z2 = 0;
 
 y0 = [V0; theta0; phi_V0; xm0; ym0; zm0; omega_x0; omega_y0; omega_z0; nu0; phi0; gama0; m0; ...
-    V_t0; theta_t0; phi_t0; x_t0; y_t0; z_t0];
+    V_t0; theta_t0; phi_t0; x_t0; y_t0; z_t0; int_n_y2; int_n_z2];
 
 %% 导弹初始化
 missile = Missile(t0, dt, tf);
@@ -75,6 +78,13 @@ phi_t = y(:, 16);
 x_t = y(:, 17);
 y_t = y(:, 18);
 z_t = y(:, 19);
+% 控制器状态
+int_n_y2 = y(:, 20);
+int_n_z2 = y(:, 21);
+delta_y = missile.recode.delta_y(1:length);
+delta_z = missile.recode.delta_z(1:length);
+n_y2_cmd = missile.recode.n_y2_cmd(1:length);
+n_z2_cmd = missile.recode.n_z2_cmd(1:length);
 
 %% 数据可视化
 % 导弹和目标轨迹
@@ -130,34 +140,56 @@ subplot(4,3,10);
 plot(t, n_x2, 'r', 'LineWidth', 1.5);
 xlabel('Time (s)');ylabel('n_x2');title('n_x2 over Time');
 subplot(4,3,11);
+hold on;
 plot(t, n_y2, 'r', 'LineWidth', 1.5);
+plot(t, n_y2_cmd, 'k--', 'LineWidth', 1.5, "DisplayName", 'n_y2_cmd');
+hold off;
 xlabel('Time (s)');ylabel('n_y2');title('n_y2 over Time');
 subplot(4,3,12);
+hold on;
 plot(t, n_z2, 'r', 'LineWidth', 1.5);
+plot(t, n_z2_cmd, 'k--', 'LineWidth', 1.5, "DisplayName", 'n_z2_cmd');
+hold off;
 xlabel('Time (s)');ylabel('n_z2');title('n_z2 over Time');
+
+figure;
+subplot(2,2,1);
+plot(t, rad2deg(delta_y), 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');ylabel('\delta_y (deg)');title('Delta_y over Time');
+subplot(2,2,2);
+plot(t, rad2deg(delta_z), 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');ylabel('\delta_z (deg)');title('Delta_z over Time');
+subplot(2,2,4);
+plot(t, int_n_y2, 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');ylabel('int_n_y2');title('int_n_y2 over Time');
+subplot(2,2,3);
+plot(t, int_n_z2, 'r', 'LineWidth', 1.5);
+xlabel('Time (s)');ylabel('int_n_z2');title('int_n_z2 over Time');
 
 %% ode, event
 function dy_dt = ode_wrap(t, y, missile, target)
     % ode45求解
     missile_states = y(1:13);
-    target_states = y(14:19); 
-
+    target_states = y(14:19);
+    int_n_y2 = y(20);
+    int_n_z2 = y(21);
     i = round((t - missile.t0) / missile.dt) + 1;
     n_y2 = missile.recode.n_y2(i);
+    n_z2 = missile.recode.n_z2(i);
 
-    % 制导: 比例导引法
+    % 制导
+    [n_y2_cmd, n_z2_cmd] = missile.Missile_Guidance(t, missile_states, target_states);
 
-    % 控制: PID控制
+    diff_n_y2 = n_y2_cmd - n_y2;
+    diff_n_z2 = n_z2_cmd - n_z2;
 
-    
-    delta_y = 0;
-    delta_z = - 0.1 * (1 - n_y2); % 目标加速度
-    max_delta = deg2rad(30);
-    delta_z = min(-max_delta, max(delta_z, -max_delta)); % 限制最大值
-
+    % 控制器
+    [delta_y, delta_z] = missile.Missile_Control(missile_states, int_n_y2, int_n_z2);
     dy_dt_missile = missile.Missile_Dynamics(t, missile_states, delta_y, delta_z);
     dy_dt_target = target.Target_Dynamics(target_states);
-    dy_dt = [dy_dt_missile; dy_dt_target];
+    dy_dt_controler = missile.Missile_Controler_Dynamics(diff_n_y2, diff_n_z2);
+
+    dy_dt = [dy_dt_missile; dy_dt_target; dy_dt_controler];
 end
 
 function value = event_wrap(t, y, missile)

@@ -6,6 +6,12 @@ classdef Missile < handle % 继承Handle, 实现引用传递
         L_wing % 翼展(m)
         R_destroy % 摧毁半径(m)
 
+        K_omega
+        K_attitude
+        K_n
+
+        N
+
         t0 % 起始时间(s)
         dt % 时间步长(s)
         tf % 结束时间(s)
@@ -20,6 +26,12 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             obj.L_ref = 1.8;
             obj.L_wing = 0.5;
             obj.R_destroy = 0.5;
+
+            obj.K_omega = 1; % 角速度增益
+            obj.K_attitude = 0; % 姿态增益
+            obj.K_n = -0.5; % 加速度增益
+
+            obj.N = 4;
 
             obj.t0 = t0;
             obj.dt = dt;
@@ -41,6 +53,8 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             obj.recode.n_x2 = zeros(1, length);
             obj.recode.n_y2 = zeros(1, length);
             obj.recode.n_z2 = zeros(1, length);
+            obj.recode.n_y2_cmd = zeros(1, length);
+            obj.recode.n_z2_cmd = zeros(1, length);
         end
 
         function dstates_dt = Missile_Dynamics(obj, t, states, ...
@@ -58,7 +72,6 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             m = states(13);
 
             i = round((t - obj.t0) / obj.dt) + 1;
-            disp(t);
 
             g = 9.8;
             [P, m_c] = obj.Missile_Propotion(t);
@@ -166,6 +179,54 @@ classdef Missile < handle % 继承Handle, 实现引用传递
                           dphi_dt;
                           dgama_dt;
                           dm_dt];
+        end
+
+        function dstates_dt = Missile_Controler_Dynamics(~, diff_n_y2, diff_n_z2)
+            dstates_dt = [diff_n_y2; diff_n_z2];
+        end
+
+        function [delta_y, delta_z] = Missile_Control(obj, states, int_n_y2, int_n_z2)
+            phi = states(11);
+            omega_y = states(8);
+            nu = states(10);
+            omega_z = states(9);
+
+            delta_y = obj.K_attitude * phi ...
+                    + obj.K_omega * omega_y ...
+                    - obj.K_n * int_n_z2; % 目标角速度
+            delta_z = obj.K_attitude * nu ...
+                    + obj.K_omega * omega_z ...
+                    + obj.K_n * int_n_y2; % 目标角速度
+
+            max_delta = deg2rad(30);
+            delta_z = max(-max_delta, min(delta_z, max_delta)); % 限制最大值
+            delta_y = max(-max_delta, min(delta_y, max_delta)); % 限制最大值
+        end
+
+        function [n_y2_cmd, n_z2_cmd] = Missile_Guidance(obj, t, missile_states, target_states)
+            r_rel = target_states(4:6) - missile_states(4:6);
+            v_m = missile_states(1);
+            theta_m = missile_states(2);
+            phi_m = missile_states(3);
+            v_t = target_states(1);
+            theta_t = target_states(2);
+            phi_t = target_states(3);
+            V_m_vec = Euler2Vec(v_m, theta_m, phi_m);
+            V_t_vec = Euler2Vec(v_t, theta_t, phi_t);
+            V_rel = V_t_vec - V_m_vec;
+
+            omega = cross(r_rel, V_rel) / norm(r_rel)^2;
+        
+            a = - obj.N * norm(V_rel) * cross(V_m_vec, omega) / norm(V_m_vec);
+            
+            n_y2_cmd = a(2) / 9.8 + 1;
+            n_z2_cmd = a(3) / 9.8;
+
+            i = round((t - obj.t0) / obj.dt) + 1;
+            obj.recode.n_y2_cmd(i+1) = n_y2_cmd;
+            obj.recode.n_z2_cmd(i+1) = n_z2_cmd;
+
+            disp(norm(r_rel));
         end
 
         function [alpha, beta, gama_V] = Missile_Angle(~, states)
