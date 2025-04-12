@@ -29,13 +29,13 @@ classdef Missile < handle % 继承Handle, 实现引用传递
             obj.L_wing = 0.5;
             obj.R_destroy = 0.5;
 
-            obj.K_omega = 1; % 角速度增益
+            obj.K_omega = 2; % 角速度增益
             obj.K_attitude = -1; % 姿态增益
-            obj.K_n = -0.5; % 加速度增益
+            obj.K_n = -0.6; % 加速度增益
 
-            obj.t_plan = 12; % 方案飞行时间
+            obj.t_plan = 51; % 方案飞行时间
 
-            obj.N = 4;
+            obj.N = 6;
 
             obj.t0 = t0;
             obj.dt = dt;
@@ -232,7 +232,7 @@ classdef Missile < handle % 继承Handle, 实现引用传递
 
             if t < obj.t_plan
                 flag = 0;
-                nu_cmd = (deg2rad(0) - deg2rad(18)) / obj.t_plan * t + deg2rad(18);
+                nu_cmd = (deg2rad(5) - deg2rad(18)) / obj.t_plan * t + deg2rad(18);
                 n_y2_cmd = NaN;
                 n_z2_cmd = NaN;
             else
