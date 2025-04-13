@@ -191,7 +191,6 @@ classdef Missile < handle % 继承Handle, 实现引用传递
         end
 
         function [delta_y, delta_z] = Missile_Control(obj, states, int_n_y2, int_n_z2, nu_cmd, flag)
-            phi = states(11);
             omega_y = states(8);
             nu = states(10);
             omega_z = states(9);
